@@ -468,22 +468,33 @@ function resolveWinnings(match) {
   const winnersPool = allBets.filter(([, b]) => b.pick === match.winner)
                              .reduce((s, [, b]) => s + b.wager, 0);
 
-  for (const [userName, bet] of allBets) {
+  for (const [betUid, bet] of allBets) {
     if (bet.resolved) continue;
-    const u = state.users[userName];
-    if (!u) continue;
-    if (!u.stats) u.stats = { placed: 0, won: 0, lost: 0, wagered: 0, returned: 0 };
+    const displayName = bet.displayName || betUid;
+    const u = state.users[displayName];
 
     if (bet.pick === match.winner) {
       // Parimutuel: proportional share of the total pool
-      const payout = winnersPool > 0 ? Math.round((bet.wager / winnersPool) * totalPool) : bet.wager;
-      u.balance += payout;
-      u.stats.won++;
-      u.stats.returned += payout;
-      const profit = payout - bet.wager;
-      showToast(`🎉 ${userName} won ${payout.toLocaleString()} FP on ${match.label}! (${profit >= 0 ? '+' : ''}${profit.toLocaleString()} FP)`);
+      const payout  = winnersPool > 0 ? Math.round((bet.wager / winnersPool) * totalPool) : bet.wager;
+      const profit  = payout - bet.wager;
+      // Credit via Firebase transaction — works even if winner is offline
+      db.ref(`userData/${betUid}/balance`).transaction(cur => (cur ?? 1000) + payout);
+      db.ref(`userData/${betUid}/stats/won`).transaction(cur => (cur ?? 0) + 1);
+      db.ref(`userData/${betUid}/stats/returned`).transaction(cur => (cur ?? 0) + payout);
+      // Update local state if currently logged in
+      if (u) {
+        u.balance += payout;
+        if (!u.stats) u.stats = { placed:0, won:0, lost:0, wagered:0, returned:0 };
+        u.stats.won++;
+        u.stats.returned += payout;
+      }
+      showToast(`🎉 ${displayName} won ${payout.toLocaleString()} FP on ${match.label}! (+${profit.toLocaleString()} FP)`);
     } else {
-      u.stats.lost++;
+      db.ref(`userData/${betUid}/stats/lost`).transaction(cur => (cur ?? 0) + 1);
+      if (u) {
+        if (!u.stats) u.stats = { placed:0, won:0, lost:0, wagered:0, returned:0 };
+        u.stats.lost++;
+      }
     }
     bet.resolved = true;
   }
@@ -601,7 +612,7 @@ function renderStage1() {
 function matchCard(m) {
   const bettable  = isBettable(m);
   const isTBD     = m.p1 === "TBD" || m.p2 === "TBD";
-  const userBet   = state.currentUser ? state.users[state.currentUser].bets[m.id] : null;
+  const userBet   = state.currentUid ? (m.bets[state.currentUid] || null) : null;
   const totalBets = Object.values(m.bets).reduce((s, b) => s + b.wager, 0);
   const betCount  = Object.keys(m.bets).length;
 
@@ -772,6 +783,7 @@ function setMatchStatus(matchId, newStatus) {
   m.status = newStatus;
   // If set to Upcoming from another state, clear winner
   if (newStatus === "Upcoming") m.winner = null;
+  saveMatchToDb(matchId);
   renderAll();
   showToast(`${m.label} → ${newStatus}`, "info");
 }
@@ -782,6 +794,7 @@ function setWinner(matchId, winnerName) {
   m.winner = winnerName;
   resolveWinnings(m);
   propagateBracket();
+  saveMatchToDb(matchId);
   renderAll();
   showToast(`🏆 ${winnerName} wins ${m.label}!`);
 }
@@ -896,8 +909,11 @@ function confirmBet() {
   if (!user.stats) user.stats = { placed: 0, won: 0, lost: 0, wagered: 0, returned: 0 };
   user.stats.placed++;
   user.stats.wagered += wager;
-  user.bets[modalMatchId] = { pick: selectedPick, wager, resolved: false };
-  m.bets[state.currentUser] = { pick: selectedPick, wager, resolved: false };
+  const bet = { pick: selectedPick, wager, resolved: false, uid: state.currentUid, displayName: state.currentUser };
+  user.bets[modalMatchId] = bet;
+  m.bets[state.currentUid] = bet;
+  saveMatchToDb(modalMatchId);
+  saveUserDataToDb();
 
   showToast(`Bet placed! ${selectedPick} — ${wager.toLocaleString()} FP`);
   closeModal();
@@ -906,19 +922,42 @@ function confirmBet() {
 }
 
 function cancelBet(matchId) {
-  if (!state.currentUser) return;
+  if (!state.currentUser || !state.currentUid) return;
   const m    = state.matches[matchId];
   const user = state.users[state.currentUser];
-  const bet  = user.bets[matchId];
+  const bet  = m.bets[state.currentUid] || user.bets?.[matchId];
   if (!bet || !isBettable(m)) return;
 
   // Refund
   user.balance += bet.wager;
   delete user.bets[matchId];
-  delete m.bets[state.currentUser];
+  delete m.bets[state.currentUid];
+  saveMatchToDb(matchId);
+  saveUserDataToDb();
 
   showToast("Bet cancelled. FP refunded.", "info");
   renderAll();
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PERSISTENCE HELPERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function saveMatchToDb(matchId) {
+  db.ref('matches/' + matchId).set(state.matches[matchId]);
+}
+function saveStage1ToDb() {
+  db.ref('stage1').set(state.stage1);
+}
+function saveUserDataToDb() {
+  if (!state.currentUid || !state.currentUser) return;
+  const u = state.users[state.currentUser];
+  if (!u) return;
+  db.ref('userData/' + state.currentUid).update({
+    displayName: state.currentUser,
+    balance: u.balance,
+    stats: u.stats || {},
+    bets: u.bets || {}
+  });
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -960,6 +999,75 @@ function attachUserListeners(fbUser) {
   dbRefs.adminsList.on("value", snap => {
     state.adminUids = snap.val() || {};
     renderAdminUsers();
+  });
+
+  // ── Live-listen to match data (admin changes, bets) ──
+  dbRefs.matches = db.ref('matches');
+  dbRefs.matches.on('value', snap => {
+    const data = snap.val();
+    if (data) {
+      for (const [id, mdata] of Object.entries(data)) {
+        if (state.matches[id]) {
+          state.matches[id] = {
+            ...state.matches[id],
+            ...mdata,
+            bets: mdata.bets || state.matches[id].bets || {}
+          };
+        }
+      }
+    }
+    propagateBracket();
+    renderAll();
+  });
+
+  // ── Live-listen to stage1 group data ──
+  dbRefs.stage1 = db.ref('stage1');
+  dbRefs.stage1.on('value', snap => {
+    const data = snap.val();
+    if (data) {
+      // Firebase stores arrays as objects when keys are numeric — convert back
+      for (const [group, rows] of Object.entries(data)) {
+        state.stage1[group] = Array.isArray(rows) ? rows : Object.values(rows);
+      }
+      renderStage1();
+    }
+  });
+
+  // ── Live-listen to all userData for leaderboard ──
+  dbRefs.allUserData = db.ref('userData');
+  dbRefs.allUserData.on('value', snap => {
+    const data = snap.val() || {};
+    for (const [duid, udata] of Object.entries(data)) {
+      const dname = udata.displayName;
+      if (!dname) continue;
+      if (!state.users[dname]) state.users[dname] = { balance: 1000, bets: {}, stats: {} };
+      state.users[dname].balance = udata.balance ?? state.users[dname].balance;
+      state.users[dname].stats   = udata.stats   || state.users[dname].stats;
+      // Reload own bets from DB
+      if (duid === uid) state.users[dname].bets = udata.bets || {};
+    }
+    renderLeaderboard();
+    renderMyStats();
+    if (state.currentUser && state.users[state.currentUser]) {
+      $("userBadge").textContent = `${state.currentUser} · ${state.users[state.currentUser].balance.toLocaleString()} FP`;
+    }
+  });
+
+  // ── Load own user data from DB (balance, stats, bets) ──
+  db.ref(`userData/${uid}`).once('value').then(snap => {
+    const data = snap.val();
+    if (data) {
+      state.users[name] = {
+        balance: data.balance ?? 1000,
+        bets:    data.bets   || {},
+        stats:   data.stats  || { placed:0, won:0, lost:0, wagered:0, returned:0 }
+      };
+    } else {
+      // First time: initialize in DB
+      saveUserDataToDb();
+    }
+    renderAll();
+    renderMyStats();
   });
 }
 
@@ -1182,6 +1290,14 @@ function savePlayerEdits() {
   propagateBracket();
   renderAll();
   renderStage1();
+
+  // Persist to Firebase
+  if (editTab === "__bracket__") {
+    ["qf1","qf2","qf3","qf4"].forEach(mid => saveMatchToDb(mid));
+  } else {
+    saveStage1ToDb();
+  }
+
   showToast("✅ Players updated!");
   closeEditPlayersModal();
 }
