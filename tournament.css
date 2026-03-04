@@ -1,0 +1,184 @@
+body { font-family: 'Segoe UI', sans-serif; }
+.bracket-line { border-color: #374151; }
+
+/* ---------- Card ---------- */
+.match-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 14px;
+  overflow: hidden;
+  width: 240px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.match-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.5); border-color: #374151; }
+.match-card.finished { border-color: #065f46; }
+.match-card.in-progress { border-color: #92400e; }
+
+/* ---------- Card header ---------- */
+.match-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #0d1117;
+  border-bottom: 1px solid #1f2937;
+}
+
+/* ---------- Player rows ---------- */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  position: relative;
+  transition: background 0.15s;
+}
+.player-row.winner-row { background: rgba(16,185,129,0.08); }
+.player-row + .player-row { border-top: 1px solid #1f2937; }
+
+.player-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #1f2937;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.winner-row .player-avatar { background: rgba(16,185,129,0.2); color: #10b981; }
+.p1-avatar { color: #34d399; }
+.p2-avatar { color: #60a5fa; }
+
+.player-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f3f4f6;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-name.tbd { color: #374151; font-style: italic; font-weight: 400; }
+.player-name.winner-name { color: #fbbf24; }
+
+.winner-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fbbf24;
+  background: rgba(251,191,36,0.12);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 6px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.vs-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+.vs-divider::before, .vs-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #1f2937;
+}
+.vs-text { font-size: 9px; font-weight: 800; color: #374151; letter-spacing: 0.1em; }
+
+/* ---------- Pool bar ---------- */
+.pool-bar-wrap { padding: 10px 12px 8px; }
+.pool-bar-labels { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.pool-bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pool-bar-label .dot { width: 7px; height: 7px; border-radius: 50%; }
+.pool-bar-label .odds-chip {
+  background: #1f2937;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 10px;
+  color: #d1d5db;
+}
+.pool-bar-track {
+  height: 6px;
+  background: #1f2937;
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+}
+.pool-bar-p1 { background: #10b981; height: 100%; transition: width 0.4s ease; }
+.pool-bar-p2 { background: #3b82f6; height: 100%; transition: width 0.4s ease; }
+.pool-bar-pcts { display: flex; justify-content: space-between; margin-top: 4px; }
+.pool-bar-pct { font-size: 10px; color: #4b5563; }
+
+/* ---------- Bet section ---------- */
+.bet-section { border-top: 1px solid #1f2937; }
+.bet-closed-info { padding: 8px 12px 10px; }
+.bet-placed-box { padding: 8px 12px 10px; background: rgba(16,185,129,0.04); }
+.bet-place-box { padding: 8px 12px 10px; }
+.bet-meta { font-size: 11px; color: #6b7280; margin-bottom: 6px; }
+.bet-result-won  { font-size: 11px; color: #10b981; margin-top: 4px; font-weight: 600; }
+.bet-result-lost { font-size: 11px; color: #ef4444; margin-top: 4px; }
+.bet-est { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
+.place-bet-btn {
+  width: 100%;
+  padding: 7px 12px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.08));
+  border: 1px solid rgba(16,185,129,0.3);
+  border-radius: 8px;
+  color: #10b981;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: center;
+}
+.place-bet-btn:hover {
+  background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(16,185,129,0.15));
+  border-color: rgba(16,185,129,0.5);
+}
+
+.cancel-bet-link { font-size: 10px; color: #ef4444; cursor: pointer; margin-top: 5px; display: inline-block; }
+.cancel-bet-link:hover { text-decoration: underline; }
+
+/* ---------- Bracket connector lines ---------- */
+.bracket-col { display: flex; flex-direction: column; gap: 4px; }
+.bracket-col-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #4b5563; text-align: center; margin-bottom: 10px; }
+.bracket-matches { display: flex; flex-direction: column; gap: 16px; }
+
+.bracket-connector {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  align-self: stretch;
+}
+.bracket-connector svg { overflow: visible; }
+
+/* ---------- Badges ---------- */
+.badge-upcoming  { background:#1e3a8a22; color:#93c5fd; border:1px solid #1e40af44; border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; }
+.badge-progress  { background:#451a0322; color:#fcd34d; border:1px solid #78350f44; border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; }
+.badge-finished  { background:#05260e22; color:#4ade80; border:1px solid #14532d44; border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; }
+
+/* ---------- Misc ---------- */
+.bet-input::-webkit-inner-spin-button { opacity:1; }
+.card-hover { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+details > summary { list-style: none; cursor: pointer; }
+details > summary::-webkit-details-marker { display: none; }
+@keyframes flashGold { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.winner-glow { animation: flashGold 1.8s infinite ease-in-out; color:#fbbf24; }
+@keyframes pulse-ring { 0%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 70%{box-shadow:0 0 0 6px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
+.in-progress-card { animation: pulse-ring 2s infinite; }

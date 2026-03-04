@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏓 Table Tennis Tournament</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#10b981', dark: '#059669', light: '#34d399' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="tournament.css" />
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col">
+
+  <!-- ═══════════════════════ AUTH OVERLAY ═══════════════════════ -->
+  <div id="authOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+      <div class="flex flex-col items-center gap-1 mb-6">
+        <span class="text-4xl">🏓</span>
+        <h1 class="text-xl font-bold text-white mt-1">TT Championship 2026</h1>
+        <p class="text-xs text-gray-400">Table Tennis Tournament — Fun Points Edition</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex bg-gray-800 rounded-xl p-1 mb-5">
+        <button id="tabLogin" onclick="switchAuthTab('login')"
+          class="flex-1 text-sm font-semibold py-1.5 rounded-lg bg-brand text-gray-950 transition-all">
+          Login
+        </button>
+        <button id="tabRegister" onclick="switchAuthTab('register')"
+          class="flex-1 text-sm font-semibold py-1.5 rounded-lg text-gray-400 hover:text-white transition-all">
+          Register
+        </button>
+      </div>
+
+      <!-- Fields -->
+      <div class="flex flex-col gap-3">
+        <div id="nameField" class="hidden">
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Display Name</label>
+          <input id="authName" type="text" placeholder="Your name"
+            class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Email</label>
+          <input id="authEmail" type="email" placeholder="you@example.com"
+            class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Password</label>
+          <input id="authPassword" type="password" placeholder="••••••••"
+            class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            onkeydown="if(event.key==='Enter') handleAuth()" />
+        </div>
+
+        <p id="authError" class="text-xs text-red-400 hidden"></p>
+
+        <button id="authSubmitBtn" onclick="handleAuth()"
+          class="w-full bg-brand hover:bg-brand-dark text-gray-950 font-bold py-2.5 rounded-xl text-sm transition-colors mt-1">
+          Login
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ TOP NAV ═══════════════════════ -->
+  <header class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🏓</span>
+      <div>
+        <h1 class="text-lg font-bold text-white leading-none">PingPong Alfa Championship 2026</h1>
+        <p class="text-xs text-gray-400">Table Tennis Tournament — פלוגה א'</p>
+      </div>
+    </div>
+
+    <!-- Active user display -->
+    <div class="flex items-center gap-3">
+      <span id="adminBadge" class="hidden text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 rounded-full px-2.5 py-1">⚙️ Admin</span>
+      <div id="userBadge" class="hidden text-sm font-semibold bg-brand/20 text-brand border border-brand/40 rounded-full px-3 py-1"></div>
+      <button id="logoutBtn" onclick="handleLogout()"
+        class="hidden text-xs bg-red-600/20 hover:bg-red-600/30 border border-red-600/40 text-red-400 font-semibold rounded-full px-3 py-1.5 transition-colors">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════ BODY ═══════════════════════════ -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- ─────────────── SIDEBAR: Leaderboard ─────────────── -->
+    <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-4 gap-4 overflow-y-auto shrink-0">
+      <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400">🏆 Leaderboard</h2>
+      <div id="leaderboard" class="flex flex-col gap-2"></div>
+
+      <hr class="border-gray-800 my-1" />
+
+      <!-- Admin panel -->
+      <details class="group">
+        <summary class="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-200">
+          ⚙️ Admin
+          <span class="group-open:rotate-180 transition-transform">▾</span>
+        </summary>
+        <div id="adminPanel" class="mt-3 flex flex-col gap-3"></div>
+      </details>
+
+      <!-- User management (admin only) -->
+      <div id="userMgmtSection" class="hidden">
+        <hr class="border-gray-800 my-1" />
+        <details class="group">
+          <summary class="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-200">
+            👥 Manage Users
+            <span class="group-open:rotate-180 transition-transform">▾</span>
+          </summary>
+          <div id="adminUsersPanel" class="mt-3 flex flex-col gap-2"></div>
+        </details>
+      </div>
+
+      <!-- Edit Players (admin only) -->
+      <div id="editPlayersBtnWrap" class="hidden">
+        <hr class="border-gray-800 my-1" />
+        <button onclick="openEditPlayersModal()"
+          class="w-full text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-white flex items-center gap-2 py-1">
+          ✏️ Edit Players
+        </button>
+      </div>
+    </aside>
+
+    <!-- ─────────────── MAIN CONTENT ─────────────── -->
+    <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
+
+      <!-- STAGE 1 RESULTS -->
+      <section>
+        <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Stage 1 — Group Results</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="stage1Grid"></div>
+      </section>
+
+      <!-- STAGE 2 BRACKET -->
+      <section>
+        <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Stage 2 — Knockout Bracket</h2>
+        <div class="flex flex-col lg:flex-row gap-6 items-start" id="bracketContainer"></div>
+      </section>
+
+      <!-- MY STATS -->
+      <section id="myStatsSection" class="hidden">
+        <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">📊 My Betting Stats</h2>
+        <div id="myStatsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ═══════════════════════ EDIT PLAYERS MODAL ═══════════════════════ -->
+  <div id="editPlayersModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col" style="max-height:90vh">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+        <h3 class="text-base font-bold">✏️ Edit Players</h3>
+        <button onclick="closeEditPlayersModal()" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 px-6 pt-4 flex-wrap" id="editPlayersTabs"></div>
+
+      <!-- Body -->
+      <div class="flex-1 overflow-y-auto px-6 py-4" id="editPlayersBody"></div>
+
+      <!-- Footer -->
+      <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-800">
+        <button onclick="closeEditPlayersModal()" class="text-sm px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">Cancel</button>
+        <button onclick="savePlayerEdits()" class="text-sm px-5 py-2 rounded-lg bg-brand hover:bg-brand-dark font-semibold text-gray-950">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ BET MODAL ═══════════════════════ -->
+  <div id="betModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <h3 class="text-lg font-bold mb-1" id="modalTitle">Place a Bet</h3>
+      <p class="text-sm text-gray-400 mb-4" id="modalSubtitle"></p>
+
+      <div class="flex flex-col gap-4">
+        <!-- Pick winner -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Pick the winner</label>
+          <div class="flex gap-3" id="modalPlayers"></div>
+        </div>
+
+        <!-- Wager -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-400 mb-1">Wager (Fun Points)</label>
+          <div class="flex gap-2 items-center">
+            <input id="wagerInput" type="number" min="10" step="10"
+              class="bet-input flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand"
+              placeholder="e.g. 100" oninput="updatePayoutPreview()" />
+            <button onclick="setMaxWager()" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg whitespace-nowrap">All In</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1" id="balanceHint"></p>
+        </div>
+
+        <!-- Payout preview -->
+        <div id="payoutPreview" class="hidden bg-gray-800 rounded-xl px-4 py-3 flex flex-col gap-1.5">
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>Current pool odds</span>
+            <span id="previewOdds" class="font-semibold text-white"></span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>Estimated payout</span>
+            <span id="previewPayout" class="font-bold text-brand"></span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>Estimated profit</span>
+            <span id="previewProfit" class="font-semibold"></span>
+          </div>
+          <p class="text-xs text-gray-600 mt-0.5">Payout may change as others place bets.</p>
+        </div>
+
+        <p id="modalError" class="text-xs text-red-400 hidden"></p>
+
+        <div class="flex gap-3 justify-end mt-1">
+          <button onclick="closeModal()" class="text-sm px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">Cancel</button>
+          <button onclick="confirmBet()" class="text-sm px-5 py-2 rounded-lg bg-brand hover:bg-brand-dark font-semibold">Confirm Bet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ TOAST ═══════════════════════════ -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden">
+    <div id="toastInner" class="px-4 py-3 rounded-xl text-sm font-medium shadow-xl"></div>
+  </div>
+
+<script>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FIREBASE INIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCA--Cu7k4bwaUNQ6-Du7tse-D1dotoXvE",
+  authDomain: "table-tenis-tournament.firebaseapp.com",
+  databaseURL: "https://table-tenis-tournament-default-rtdb.firebaseio.com",
+  projectId: "table-tenis-tournament",
+  storageBucket: "table-tenis-tournament.firebasestorage.app",
+  messagingSenderId: "161324523644",
+  appId: "1:161324523644:web:b618f34309eb7e8bcbe9f9",
+  measurementId: "G-YWJCHN1V2J"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.database();
+let dbRefs = {}; // active DB refs for cleanup
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   AUTH UI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let currentAuthTab = 'login';
+
+function switchAuthTab(tab) {
+  currentAuthTab = tab;
+  const isLogin = tab === 'login';
+  document.getElementById('tabLogin').className    = `flex-1 text-sm font-semibold py-1.5 rounded-lg transition-all ${isLogin  ? 'bg-brand text-gray-950' : 'text-gray-400 hover:text-white'}`;
+  document.getElementById('tabRegister').className = `flex-1 text-sm font-semibold py-1.5 rounded-lg transition-all ${!isLogin ? 'bg-brand text-gray-950' : 'text-gray-400 hover:text-white'}`;
+  document.getElementById('nameField').classList.toggle('hidden', isLogin);
+  document.getElementById('authSubmitBtn').textContent = isLogin ? 'Login' : 'Create Account';
+  document.getElementById('authError').classList.add('hidden');
+}
+
+function handleAuth() {
+  const email    = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl    = document.getElementById('authError');
+  errEl.classList.add('hidden');
+
+  if (!email || !password) {
+    errEl.textContent = 'Please fill in all fields.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Please wait…';
+
+  if (currentAuthTab === 'login') {
+    auth.signInWithEmailAndPassword(email, password)
+      .catch(err => {
+        errEl.textContent = friendlyAuthError(err.code);
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Login';
+      });
+  } else {
+    const name = document.getElementById('authName').value.trim();
+    if (!name) {
+      errEl.textContent = 'Please enter your display name.';
+      errEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+      return;
+    }
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(cred => cred.user.updateProfile({ displayName: name }))
+      .catch(err => {
+        errEl.textContent = friendlyAuthError(err.code);
+        errEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      });
+  }
+}
+
+function handleLogout() {
+  auth.signOut();
+}
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/user-not-found':      'No account found with this email.',
+    'auth/wrong-password':      'Incorrect password.',
+    'auth/invalid-email':       'Invalid email address.',
+    'auth/email-already-in-use':'This email is already registered.',
+    'auth/weak-password':       'Password must be at least 6 characters.',
+    'auth/too-many-requests':   'Too many attempts. Try again later.',
+    'auth/invalid-credential':  'Invalid email or password.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   STATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const state = {
+  currentUser: null,
+  currentUid:  null,
+  isAdmin:     false,
+  allUsers:    {},   // uid → { displayName, email }
+  adminUids:   {},   // uid → true
+
+  users: {},  // populated dynamically from Firebase auth
+
+  stage1: {
+    "Group A": [
+      { player: "Zhang Wei",    W: 5, L: 0, pts: 10, qualified: true  },
+      { player: "Liu Ming",     W: 3, L: 2, pts: 6,  qualified: true  },
+      { player: "Park Ji-sung", W: 2, L: 3, pts: 4,  qualified: false },
+      { player: "Arjun Sharma", W: 0, L: 5, pts: 0,  qualified: false },
+    ],
+    "Group B": [
+      { player: "Timo Boll",    W: 5, L: 0, pts: 10, qualified: true  },
+      { player: "D. Ovtcharov", W: 4, L: 1, pts: 8,  qualified: true  },
+      { player: "Carlos Pérez", W: 1, L: 4, pts: 2,  qualified: false },
+      { player: "Yuki Tanaka",  W: 0, L: 5, pts: 0,  qualified: false },
+    ],
+    "Group C": [
+      { player: "Ma Long",      W: 5, L: 0, pts: 10, qualified: true  },
+      { player: "Xu Xin",       W: 3, L: 2, pts: 6,  qualified: true  },
+      { player: "Liam O'Brien", W: 2, L: 3, pts: 4,  qualified: false },
+      { player: "Ahmed Reza",   W: 0, L: 5, pts: 0,  qualified: false },
+    ],
+    "Group D": [
+      { player: "Fan Zhendong", W: 5, L: 0, pts: 10, qualified: true  },
+      { player: "Wang Chuqin",  W: 4, L: 1, pts: 8,  qualified: true  },
+      { player: "Niels König",  W: 1, L: 4, pts: 2,  qualified: false },
+      { player: "Raj Patel",    W: 0, L: 5, pts: 0,  qualified: false },
+    ],
+  },
+
+  // matchId → { id, round, label, p1, p2, status, winner, bets: { userName: { pick, wager } } }
+  matches: {
+    qf1: { id:"qf1", round:"Quarterfinals", label:"QF 1", p1:"Zhang Wei",    p2:"D. Ovtcharov", status:"Upcoming",  winner:null, bets:{} },
+    qf2: { id:"qf2", round:"Quarterfinals", label:"QF 2", p1:"Timo Boll",    p2:"Liu Ming",     status:"In Progress", winner:null, bets:{} },
+    qf3: { id:"qf3", round:"Quarterfinals", label:"QF 3", p1:"Ma Long",      p2:"Wang Chuqin",  status:"Finished",  winner:"Ma Long", bets:{} },
+    qf4: { id:"qf4", round:"Quarterfinals", label:"QF 4", p1:"Fan Zhendong", p2:"Xu Xin",       status:"Upcoming",  winner:null, bets:{} },
+    sf1: { id:"sf1", round:"Semifinals",    label:"SF 1", p1:"TBD",          p2:"TBD",          status:"Upcoming",  winner:null, bets:{} },
+    sf2: { id:"sf2", round:"Semifinals",    label:"SF 2", p1:"TBD",          p2:"TBD",          status:"Upcoming",  winner:null, bets:{} },
+    fin: { id:"fin", round:"Final",         label:"Final",p1:"TBD",          p2:"TBD",          status:"Upcoming",  winner:null, bets:{} },
+  },
+
+  // bracket wiring: which matches feed into which
+  bracketFeeds: {
+    sf1: ["qf1", "qf2"],
+    sf2: ["qf3", "qf4"],
+    fin: ["sf1", "sf2"],
+  },
+};
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MODAL STATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let modalMatchId  = null;
+let selectedPick  = null;
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HELPERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const $ = id => document.getElementById(id);
+const isBettable = m => m.status === "Upcoming";
+
+function showToast(msg, type = "success") {
+  const t = $("toast"), ti = $("toastInner");
+  ti.className = `px-4 py-3 rounded-xl text-sm font-medium shadow-xl ${
+    type === "success" ? "bg-brand text-gray-950" :
+    type === "error"   ? "bg-red-600 text-white" :
+                         "bg-yellow-500 text-gray-950"
+  }`;
+  ti.textContent = msg;
+  t.classList.remove("hidden");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add("hidden"), 3000);
+}
+
+function badgeHTML(status) {
+  const cls  = status === "Upcoming"    ? "badge-upcoming"  :
+               status === "In Progress" ? "badge-progress"  : "badge-finished";
+  const icon = status === "Upcoming"    ? "🕐" :
+               status === "In Progress" ? "⚡" : "✅";
+  return `<span class="${cls}">${icon} ${status}</span>`;
+}
+
+function sortedLeaderboard() {
+  return Object.entries(state.users)
+    .map(([name, u]) => ({ name, balance: u.balance, stats: u.stats || { placed:0, won:0, lost:0, wagered:0, returned:0 } }))
+    .sort((a, b) => b.balance - a.balance);
+}
+
+/* Propagate winners forward through the bracket */
+function propagateBracket() {
+  for (const [targetId, feedIds] of Object.entries(state.bracketFeeds)) {
+    const target = state.matches[targetId];
+    const winners = feedIds.map(fid => state.matches[fid].winner).filter(Boolean);
+    if (winners.length >= 1) target.p1 = winners[0];
+    if (winners.length >= 2) target.p2 = winners[1];
+  }
+}
+
+/* Resolve winnings when a match is set to Finished + winner (parimutuel pool) */
+function resolveWinnings(match) {
+  const allBets     = Object.entries(match.bets);
+  const totalPool   = allBets.reduce((s, [, b]) => s + b.wager, 0);
+  const winnersPool = allBets.filter(([, b]) => b.pick === match.winner)
+                             .reduce((s, [, b]) => s + b.wager, 0);
+
+  for (const [userName, bet] of allBets) {
+    if (bet.resolved) continue;
+    const u = state.users[userName];
+    if (!u) continue;
+    if (!u.stats) u.stats = { placed: 0, won: 0, lost: 0, wagered: 0, returned: 0 };
+
+    if (bet.pick === match.winner) {
+      // Parimutuel: proportional share of the total pool
+      const payout = winnersPool > 0 ? Math.round((bet.wager / winnersPool) * totalPool) : bet.wager;
+      u.balance += payout;
+      u.stats.won++;
+      u.stats.returned += payout;
+      const profit = payout - bet.wager;
+      showToast(`🎉 ${userName} won ${payout.toLocaleString()} FP on ${match.label}! (${profit >= 0 ? '+' : ''}${profit.toLocaleString()} FP)`);
+    } else {
+      u.stats.lost++;
+    }
+    bet.resolved = true;
+  }
+}
+
+/* Current parimutuel multiplier for a given pick (incl. a hypothetical extra wager) */
+function calcOdds(match, pick, extraWager = 0) {
+  const bets = Object.values(match.bets);
+  const total    = bets.reduce((s, b) => s + b.wager, 0) + extraWager;
+  const pickPool = bets.filter(b => b.pick === pick).reduce((s, b) => s + b.wager, 0) + extraWager;
+  if (total === 0 || pickPool === 0) return null;
+  return total / pickPool;
+}
+
+/* Pool distribution bar HTML */
+function poolBar(match) {
+  const bets = Object.values(match.bets);
+  if (bets.length === 0) return '';
+  const p1Pool = bets.filter(b => b.pick === match.p1).reduce((s, b) => s + b.wager, 0);
+  const p2Pool = bets.filter(b => b.pick === match.p2).reduce((s, b) => s + b.wager, 0);
+  const total  = p1Pool + p2Pool;
+  if (total === 0) return '';
+  const p1pct  = Math.round(p1Pool / total * 100);
+  const p2pct  = 100 - p1pct;
+  const p1odds = p2Pool > 0 ? (total / p1Pool).toFixed(2) : '-';
+  const p2odds = p1Pool > 0 ? (total / p2Pool).toFixed(2) : '-';
+  const p1name = match.p1.split(' ').map(w=>w[0]).join('').slice(0,3);
+  const p2name = match.p2.split(' ').map(w=>w[0]).join('').slice(0,3);
+  return `
+    <div class="pool-bar-wrap">
+      <div class="pool-bar-labels">
+        <div class="pool-bar-label" style="color:#34d399">
+          <div class="dot" style="background:#10b981"></div>
+          ${p1name}
+          <span class="odds-chip">&times;${p1odds}</span>
+        </div>
+        <div class="pool-bar-label" style="color:#93c5fd; flex-direction:row-reverse">
+          <div class="dot" style="background:#3b82f6"></div>
+          ${p2name}
+          <span class="odds-chip">&times;${p2odds}</span>
+        </div>
+      </div>
+      <div class="pool-bar-track">
+        <div class="pool-bar-p1" style="width:${p1pct}%"></div>
+        <div class="pool-bar-p2" style="width:${p2pct}%"></div>
+      </div>
+      <div class="pool-bar-pcts">
+        <span class="pool-bar-pct">${p1pct}%</span>
+        <span class="pool-bar-pct" style="text-align:right">${p2pct}%</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: LEADERBOARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderLeaderboard() {
+  const board = sortedLeaderboard();
+  const medals = ["🥇","🥈","🥉"];
+  $("leaderboard").innerHTML = board.map((u, i) => {
+    const s = u.stats;
+    const winRate = s.placed > 0 ? Math.round(s.won / s.placed * 100) : null;
+    return `
+    <div class="flex flex-col bg-gray-800 rounded-xl px-3 py-2 gap-1 ${u.name === state.currentUser ? "ring-1 ring-brand" : ""}">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-sm">${medals[i] || `${i+1}.`}</span>
+          <span class="text-sm font-medium truncate max-w-[80px]">${u.name}</span>
+        </div>
+        <span class="text-sm font-bold text-brand whitespace-nowrap">${u.balance.toLocaleString()} FP</span>
+      </div>
+      ${s.placed > 0 ? `
+      <div class="flex items-center gap-2 text-xs text-gray-500">
+        <span class="text-green-400">✔ ${s.won}W</span>
+        <span class="text-red-400">✖ ${s.lost}L</span>
+        ${winRate !== null ? `<span class="ml-auto">${winRate}% WR</span>` : ""}
+      </div>` : ""}
+    </div>
+  `}).join("");
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: STAGE 1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderStage1() {
+  $("stage1Grid").innerHTML = Object.entries(state.stage1).map(([group, rows]) => `
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden card-hover">
+      <div class="bg-gray-800 px-4 py-2 flex items-center justify-between">
+        <span class="font-semibold text-sm">${group}</span>
+        <span class="text-xs text-gray-400">W / L / Pts</span>
+      </div>
+      <table class="w-full text-sm">
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr class="${i % 2 === 0 ? "bg-gray-900" : "bg-gray-800/50"} ${r.qualified ? "" : "opacity-50"}">
+              <td class="px-4 py-2 flex items-center gap-2">
+                ${r.qualified ? '<span title="Qualified" class="text-brand text-xs">✦</span>' : '<span class="text-gray-600 text-xs">·</span>'}
+                <span class="${r.qualified ? "font-semibold text-white" : "text-gray-400"}">${r.player}</span>
+              </td>
+              <td class="px-3 py-2 text-center text-gray-300">${r.W}</td>
+              <td class="px-3 py-2 text-center text-gray-300">${r.L}</td>
+              <td class="px-3 py-2 text-center font-bold text-brand">${r.pts}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `).join("");
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: BRACKET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function matchCard(m) {
+  const bettable  = isBettable(m);
+  const isTBD     = m.p1 === "TBD" || m.p2 === "TBD";
+  const userBet   = state.currentUser ? state.users[state.currentUser].bets[m.id] : null;
+  const totalBets = Object.values(m.bets).reduce((s, b) => s + b.wager, 0);
+  const betCount  = Object.keys(m.bets).length;
+
+  const initials = name => name === "TBD" ? "?" : name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+  const playerRow = (player, side) => {
+    const isWinner = m.winner === player;
+    const isTbd   = player === "TBD";
+    const avatarCls = isWinner ? '' : side === 'p1' ? 'p1-avatar' : 'p2-avatar';
+    return `
+      <div class="player-row${isWinner ? ' winner-row' : ''}">
+        <div class="player-avatar ${avatarCls}">${isWinner ? '🏆' : initials(player)}</div>
+        <div class="player-name${isTbd ? ' tbd' : isWinner ? ' winner-name winner-glow' : ''}">${player}</div>
+        ${isWinner ? '<div class="winner-badge">WINNER</div>' : ''}
+      </div>
+    `;
+  };
+
+  const betSection = () => {
+    if (isTBD) return `<div class="bet-section"><div class="bet-closed-info"><span class="bet-meta">Players TBD</span></div></div>`;
+
+    if (!bettable) {
+      const wonLost = userBet?.resolved
+        ? (m.winner === userBet.pick
+            ? `<div class="bet-result-won">🎉 Won! ${userBet.pick} &mdash; ${userBet.wager.toLocaleString()} FP</div>`
+            : `<div class="bet-result-lost">❌ Lost &mdash; ${userBet.wager.toLocaleString()} FP</div>`)
+        : (userBet ? `<div class="bet-result-won" style="color:#9ca3af">📋 ${userBet.pick} &mdash; ${userBet.wager.toLocaleString()} FP</div>` : '');
+      return `
+        <div class="bet-section">
+          ${poolBar(m)}
+          <div class="bet-closed-info">
+            <div class="bet-meta">${betCount} bet${betCount!==1?'s':''} &middot; ${totalBets.toLocaleString()} FP pool</div>
+            ${wonLost}
+          </div>
+        </div>
+      `;
+    }
+
+    if (!state.currentUser) {
+      return `<div class="bet-section"><div class="bet-closed-info"><span class="bet-meta" style="color:#f59e0b">Log in to bet</span></div></div>`;
+    }
+
+    if (userBet) {
+      const odds = calcOdds(m, userBet.pick);
+      const estPayout = odds ? Math.round(userBet.wager * odds) : userBet.wager;
+      const est = odds ? `<div class="bet-est">Est. payout: <strong style="color:#f3f4f6">${estPayout.toLocaleString()} FP</strong> &times;${odds.toFixed(2)}</div>` : '';
+      return `
+        <div class="bet-section">
+          ${poolBar(m)}
+          <div class="bet-placed-box">
+            <div class="bet-result-won">✅ ${userBet.pick} &mdash; ${userBet.wager.toLocaleString()} FP</div>
+            ${est}
+            <span class="cancel-bet-link" onclick="cancelBet('${m.id}')">Cancel bet</span>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="bet-section">
+        ${betCount > 0 ? poolBar(m) : ''}
+        <div class="bet-place-box">
+          ${betCount > 0 ? `<div class="bet-meta">${betCount} bet${betCount!==1?'s':''} &middot; ${totalBets.toLocaleString()} FP pool</div>` : ''}
+          <button onclick="openModal('${m.id}')" class="place-bet-btn">💰 Place Bet</button>
+        </div>
+      </div>
+    `;
+  };
+
+  const statusClass = m.status === 'Finished' ? 'finished' : m.status === 'In Progress' ? 'in-progress' : '';
+  const ipPulse     = m.status === 'In Progress' ? ' in-progress-card' : '';
+
+  return `
+    <div class="match-card ${statusClass}${ipPulse}">
+      <div class="match-card-header">
+        <span style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.05em">${m.label}</span>
+        ${badgeHTML(m.status)}
+      </div>
+      ${playerRow(m.p1, 'p1')}
+      <div class="vs-divider"><span class="vs-text">VS</span></div>
+      ${playerRow(m.p2, 'p2')}
+      ${betSection()}
+    </div>
+  `;
+}
+
+function roundColumn(title, matchIds, extraClass = "") {
+  const cards = matchIds.map(id => matchCard(state.matches[id])).join('<div style="flex:1;min-height:12px"></div>');
+  return `
+    <div class="bracket-col ${extraClass}" style="align-items:center">
+      <div class="bracket-col-title">${title}</div>
+      <div class="bracket-matches" style="align-items:center">${cards}</div>
+    </div>
+  `;
+}
+
+function bracketArrow() {
+  return `
+    <div class="bracket-connector" style="padding:0 8px;align-self:center;opacity:0.4">
+      <svg width="24" height="40" viewBox="0 0 24 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="2,2 22,20 2,38" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+  `;
+}
+
+function renderBracket() {
+  propagateBracket();
+  $('bracketContainer').innerHTML = `
+    <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;gap:8px">
+      ${roundColumn('Quarterfinals', ['qf1','qf2','qf3','qf4'])}
+      ${bracketArrow()}
+      ${roundColumn('Semifinals', ['sf1','sf2'])}
+      ${bracketArrow()}
+      ${roundColumn('Final', ['fin'])}
+    </div>
+  `;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: ADMIN PANEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderAdmin() {
+  if (!state.isAdmin) {
+    $("adminPanel").innerHTML = '<p class="text-xs text-gray-500 italic mt-1">🔒 Admin access required.</p>';
+    return;
+  }
+  const matchOrder = ["qf1","qf2","qf3","qf4","sf1","sf2","fin"];
+  $("adminPanel").innerHTML = matchOrder.map(mid => {
+    const m = state.matches[mid];
+    const isTBD = m.p1 === "TBD" || m.p2 === "TBD";
+    return `
+      <div class="bg-gray-800 rounded-lg p-3 text-xs flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-gray-200">${m.label}</span>
+          ${badgeHTML(m.status)}
+        </div>
+        ${!isTBD ? `
+        <select onchange="setMatchStatus('${mid}', this.value)"
+          class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-200 w-full">
+          <option ${m.status==="Upcoming"?"selected":""}>Upcoming</option>
+          <option ${m.status==="In Progress"?"selected":""}>In Progress</option>
+          <option ${m.status==="Finished"?"selected":""}>Finished</option>
+        </select>
+        ${m.status === "Finished" ? `
+        <div class="flex flex-col gap-1">
+          <label class="text-gray-400">Winner:</label>
+          <select onchange="setWinner('${mid}', this.value)"
+            class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-200 w-full">
+            <option value="">— pick winner —</option>
+            <option value="${m.p1}" ${m.winner===m.p1?"selected":""}>${m.p1}</option>
+            <option value="${m.p2}" ${m.winner===m.p2?"selected":""}>${m.p2}</option>
+          </select>
+        </div>
+        ` : ""}
+        ` : `<p class="text-gray-600 italic">Players TBD</p>`}
+      </div>
+    `;
+  }).join("");
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ADMIN ACTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function setMatchStatus(matchId, newStatus) {
+  if (!state.isAdmin) { showToast("Admin only!", "error"); return; }
+  const m = state.matches[matchId];
+  m.status = newStatus;
+  // If set to Upcoming from another state, clear winner
+  if (newStatus === "Upcoming") m.winner = null;
+  renderAll();
+  showToast(`${m.label} → ${newStatus}`, "info");
+}
+
+function setWinner(matchId, winnerName) {
+  if (!state.isAdmin || !winnerName) return;
+  const m = state.matches[matchId];
+  m.winner = winnerName;
+  resolveWinnings(m);
+  propagateBracket();
+  renderAll();
+  showToast(`🏆 ${winnerName} wins ${m.label}!`);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MODAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function openModal(matchId) {
+  if (!state.currentUser) { showToast("Select a player first!", "error"); return; }
+  const m = state.matches[matchId];
+  if (!isBettable(m)) { showToast("Betting is closed for this match.", "error"); return; }
+
+  modalMatchId = matchId;
+  selectedPick = null;
+
+  $("modalTitle").textContent   = `Bet on ${m.label}`;
+  $("modalSubtitle").textContent = `${m.p1}  vs  ${m.p2}`;
+  $("wagerInput").value          = "";
+  $("modalError").classList.add("hidden");
+
+  const bal = state.users[state.currentUser].balance;
+  $("balanceHint").textContent = `Your balance: ${bal.toLocaleString()} FP`;
+
+  $('modalPlayers').innerHTML = [m.p1, m.p2].map(p => {
+    const odds = calcOdds(m, p);
+    return `
+    <button onclick="pickPlayer('${p}')" id="pick_${p.replace(/\s/g,'_')}"
+      class="pick-btn flex-1 text-sm py-2 px-3 rounded-xl border border-gray-700 hover:border-brand hover:bg-brand/10 font-medium transition-all">
+      <div>${p}</div>
+      <div class="text-xs opacity-60 mt-0.5">${odds ? `×${odds.toFixed(2)} odds` : 'First bet'}</div>
+    </button>
+  `}).join("");
+
+  $("betModal").classList.remove("hidden");
+}
+
+function pickPlayer(name) {
+  selectedPick = name;
+  document.querySelectorAll(".pick-btn").forEach(btn => {
+    btn.classList.remove("border-brand","bg-brand/20","text-brand");
+    btn.classList.add("border-gray-700");
+  });
+  const safe = name.replace(/\s/g, '_');
+  const btn  = document.getElementById(`pick_${safe}`);
+  if (btn) {
+    btn.classList.add("border-brand","bg-brand/20","text-brand");
+    btn.classList.remove("border-gray-700");
+  }  updatePayoutPreview();}
+
+function updatePayoutPreview() {
+  const wager = parseInt($('wagerInput').value, 10);
+  const preview = $('payoutPreview');
+  if (!selectedPick || !wager || wager < 1 || !modalMatchId) {
+    preview.classList.add('hidden');
+    return;
+  }
+  const m = state.matches[modalMatchId];
+  const odds = calcOdds(m, selectedPick, wager) || 1;
+  const payout = Math.round(wager * odds);
+  const profit = payout - wager;
+  $('previewOdds').textContent   = `×${odds.toFixed(2)}`;
+  $('previewPayout').textContent  = `${payout.toLocaleString()} FP`;
+  $('previewProfit').textContent  = `${profit >= 0 ? '+' : ''}${profit.toLocaleString()} FP`;
+  $('previewProfit').className    = `font-semibold ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`;
+  preview.classList.remove('hidden');
+}
+
+function setMaxWager() {
+  const bal = state.users[state.currentUser]?.balance ?? 0;
+  $('wagerInput').value = bal;
+  updatePayoutPreview();
+}
+
+function closeModal() {
+  $("betModal").classList.add("hidden");
+  modalMatchId = null;
+  selectedPick = null;
+}
+
+function confirmBet() {
+  const errEl = $("modalError");
+  errEl.classList.add("hidden");
+
+  if (!selectedPick) {
+    errEl.textContent = "Please pick a player!";
+    errEl.classList.remove("hidden");
+    return;
+  }
+
+  const wager = parseInt($("wagerInput").value, 10);
+  const user  = state.users[state.currentUser];
+  const m     = state.matches[modalMatchId];
+
+  if (!wager || wager < 10) {
+    errEl.textContent = "Minimum wager is 10 FP.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  if (wager > user.balance) {
+    errEl.textContent = `Not enough Fun Points! (balance: ${user.balance.toLocaleString()} FP)`;
+    errEl.classList.remove("hidden");
+    return;
+  }
+  if (!isBettable(m)) {
+    errEl.textContent = "Betting is now closed for this match.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+
+  // Place bet: deduct immediately, credit back on win
+  user.balance -= wager;
+  if (!user.stats) user.stats = { placed: 0, won: 0, lost: 0, wagered: 0, returned: 0 };
+  user.stats.placed++;
+  user.stats.wagered += wager;
+  user.bets[modalMatchId] = { pick: selectedPick, wager, resolved: false };
+  m.bets[state.currentUser] = { pick: selectedPick, wager, resolved: false };
+
+  showToast(`Bet placed! ${selectedPick} — ${wager.toLocaleString()} FP`);
+  closeModal();
+  renderAll();
+  renderMyStats();
+}
+
+function cancelBet(matchId) {
+  if (!state.currentUser) return;
+  const m    = state.matches[matchId];
+  const user = state.users[state.currentUser];
+  const bet  = user.bets[matchId];
+  if (!bet || !isBettable(m)) return;
+
+  // Refund
+  user.balance += bet.wager;
+  delete user.bets[matchId];
+  delete m.bets[state.currentUser];
+
+  showToast("Bet cancelled. FP refunded.", "info");
+  renderAll();
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   USER SESSION & DB LISTENERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function attachUserListeners(fbUser) {
+  detachUserListeners();
+  const uid  = fbUser.uid;
+  const name = fbUser.displayName || fbUser.email.split("@")[0];
+
+  // Register this user in /users
+  db.ref(`users/${uid}`).set({ displayName: name, email: fbUser.email });
+
+  // Bootstrap: if NO admins exist yet, make this user admin
+  db.ref("admins").once("value").then(snap => {
+    if (!snap.exists()) db.ref(`admins/${uid}`).set(true);
+  });
+
+  // Live-listen to own admin status
+  dbRefs.adminStatus = db.ref(`admins/${uid}`);
+  dbRefs.adminStatus.on("value", snap => {
+    state.isAdmin = snap.val() === true;
+    state.isAdmin ? $("adminBadge").classList.remove("hidden") : $("adminBadge").classList.add("hidden");
+    state.isAdmin ? $("userMgmtSection").classList.remove("hidden") : $("userMgmtSection").classList.add("hidden");
+    state.isAdmin ? $("editPlayersBtnWrap").classList.remove("hidden") : $("editPlayersBtnWrap").classList.add("hidden");
+    renderAll();
+    renderAdminUsers();
+  });
+
+  // Live-listen to full users list
+  dbRefs.allUsers = db.ref("users");
+  dbRefs.allUsers.on("value", snap => {
+    state.allUsers = snap.val() || {};
+    renderAdminUsers();
+  });
+
+  // Live-listen to admins list
+  dbRefs.adminsList = db.ref("admins");
+  dbRefs.adminsList.on("value", snap => {
+    state.adminUids = snap.val() || {};
+    renderAdminUsers();
+  });
+}
+
+function detachUserListeners() {
+  Object.values(dbRefs).forEach(ref => ref && ref.off());
+  dbRefs = {};
+}
+
+function setLoggedInUser(fbUser) {
+  const name = fbUser.displayName || fbUser.email.split("@")[0];
+  if (!state.users[name]) state.users[name] = { balance: 1000, bets: {} };
+  state.currentUser = fbUser.displayName || name;
+  state.currentUid  = fbUser.uid;
+  const badge = $("userBadge");
+  badge.textContent = `${name} · ${state.users[name].balance.toLocaleString()} FP`;
+  badge.classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  attachUserListeners(fbUser);
+}
+
+function clearSession() {
+  detachUserListeners();
+  state.currentUser = null;
+  state.currentUid  = null;
+  state.isAdmin     = false;
+  state.allUsers    = {};
+  state.adminUids   = {};
+  $("userBadge").classList.add("hidden");
+  $("logoutBtn").classList.add("hidden");
+  $("adminBadge").classList.add("hidden");
+  $("userMgmtSection").classList.add("hidden");
+  $("editPlayersBtnWrap").classList.add("hidden");
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ADMIN: MANAGE USERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderAdminUsers() {
+  const panel = $("adminUsersPanel");
+  if (!panel || !state.isAdmin) return;
+  const users  = state.allUsers  || {};
+  const admins = state.adminUids || {};
+  if (Object.keys(users).length === 0) {
+    panel.innerHTML = '<p class="text-xs text-gray-500">No users yet.</p>';
+    return;
+  }
+  panel.innerHTML = Object.entries(users).map(([uid, u]) => {
+    const isThemAdmin = admins[uid] === true;
+    const isSelf      = uid === state.currentUid;
+    return `
+      <div class="bg-gray-800 rounded-lg p-2 text-xs flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span class="shrink-0">${isThemAdmin ? "⚙️" : "👤"}</span>
+          <span class="truncate ${isSelf ? "text-brand font-semibold" : "text-gray-200"}">${u.displayName}${isSelf ? " (you)" : ""}</span>
+        </div>
+        ${isSelf ? "" : isThemAdmin
+          ? `<button onclick="revokeAdmin('${uid}')" class="shrink-0 text-red-400 hover:text-red-300 border border-red-600/40 rounded px-1.5 py-0.5 whitespace-nowrap">Revoke</button>`
+          : `<button onclick="promoteUser('${uid}')" class="shrink-0 text-yellow-400 hover:text-yellow-300 border border-yellow-500/40 rounded px-1.5 py-0.5 whitespace-nowrap">Make Admin</button>`
+        }
+      </div>
+    `;
+  }).join("");
+}
+
+function promoteUser(uid) {
+  if (!state.isAdmin) { showToast("Admin only!", "error"); return; }
+  db.ref(`admins/${uid}`).set(true)
+    .then(() => showToast("User promoted to admin! ⚙️"));
+}
+
+function revokeAdmin(uid) {
+  if (!state.isAdmin) { showToast("Admin only!", "error"); return; }
+  db.ref(`admins/${uid}`).remove()
+    .then(() => showToast("Admin access revoked.", "info"));
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ADMIN: EDIT PLAYERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let editTab = null;
+
+function openEditPlayersModal() {
+  if (!state.isAdmin) return;
+  editTab = Object.keys(state.stage1)[0];
+  renderEditPlayersModal();
+  $("editPlayersModal").classList.remove("hidden");
+}
+
+function closeEditPlayersModal() {
+  $("editPlayersModal").classList.add("hidden");
+}
+
+function setEditTab(tab) {
+  editTab = tab;
+  renderEditPlayersModal();
+}
+
+function renderEditPlayersModal() {
+  const tabs  = [...Object.keys(state.stage1), "__bracket__"];
+  const label = t => t === "__bracket__" ? "🏆 Bracket (QFs)" : t;
+
+  $("editPlayersTabs").innerHTML = tabs.map(t => `
+    <button onclick="setEditTab('${t}')"
+      class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+        t === editTab
+          ? 'bg-brand text-gray-950'
+          : 'bg-gray-800 text-gray-400 hover:text-white'
+      }">${label(t)}</button>
+  `).join("");
+
+  let html = '';
+
+  if (editTab === "__bracket__") {
+    // QF matches only — SF/Final are auto-propagated
+    const qfs = ["qf1","qf2","qf3","qf4"];
+    html = `
+      <p class="text-xs text-gray-500 mb-4">Edit the players for each Quarterfinal match. Semifinals and Final are filled automatically from QF results.</p>
+      <div class="flex flex-col gap-3">
+        ${qfs.map(mid => {
+          const m = state.matches[mid];
+          return `
+            <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-3">
+              <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${m.label}</span>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Player 1</label>
+                  <input id="ep_${mid}_p1" value="${m.p1}"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Player 2</label>
+                  <input id="ep_${mid}_p2" value="${m.p2}"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand" />
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  } else {
+    // Stage 1 group
+    const rows = state.stage1[editTab];
+    html = `
+      <p class="text-xs text-gray-500 mb-4">Edit player names, stats, and qualification status for <strong class="text-gray-300">${editTab}</strong>.</p>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-gray-500 border-b border-gray-800">
+            <th class="text-left pb-2 font-semibold">Player</th>
+            <th class="text-center pb-2 font-semibold w-14">W</th>
+            <th class="text-center pb-2 font-semibold w-14">L</th>
+            <th class="text-center pb-2 font-semibold w-14">Pts</th>
+            <th class="text-center pb-2 font-semibold w-16">Qualified</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          ${rows.map((r, i) => `
+            <tr>
+              <td class="py-2 pr-2">
+                <input id="ep_s1_${editTab}_${i}_name" value="${r.player}"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand" />
+              </td>
+              <td class="py-2 px-1">
+                <input id="ep_s1_${editTab}_${i}_W" type="number" min="0" value="${r.W}"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-white text-xs text-center focus:outline-none focus:ring-2 focus:ring-brand" />
+              </td>
+              <td class="py-2 px-1">
+                <input id="ep_s1_${editTab}_${i}_L" type="number" min="0" value="${r.L}"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-white text-xs text-center focus:outline-none focus:ring-2 focus:ring-brand" />
+              </td>
+              <td class="py-2 px-1">
+                <input id="ep_s1_${editTab}_${i}_pts" type="number" min="0" value="${r.pts}"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-white text-xs text-center focus:outline-none focus:ring-2 focus:ring-brand" />
+              </td>
+              <td class="py-2 text-center">
+                <input id="ep_s1_${editTab}_${i}_q" type="checkbox" ${r.qualified ? 'checked' : ''}
+                  class="w-4 h-4 accent-brand" />
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  $("editPlayersBody").innerHTML = html;
+}
+
+function savePlayerEdits() {
+  if (!state.isAdmin) return;
+
+  if (editTab === "__bracket__") {
+    const qfs = ["qf1","qf2","qf3","qf4"];
+    qfs.forEach(mid => {
+      const m  = state.matches[mid];
+      const p1 = $("ep_" + mid + "_p1")?.value.trim();
+      const p2 = $("ep_" + mid + "_p2")?.value.trim();
+      if (p1) m.p1 = p1;
+      if (p2) m.p2 = p2;
+      // Reset winner if players changed
+      if (m.winner && m.winner !== m.p1 && m.winner !== m.p2) m.winner = null;
+    });
+  } else {
+    const rows = state.stage1[editTab];
+    rows.forEach((r, i) => {
+      const base = `ep_s1_${editTab}_${i}_`;
+      const name = $(base + "name")?.value.trim();
+      const W    = parseInt($(base + "W")?.value, 10);
+      const L    = parseInt($(base + "L")?.value, 10);
+      const pts  = parseInt($(base + "pts")?.value, 10);
+      const q    = $(base + "q")?.checked;
+      if (name) r.player = name;
+      if (!isNaN(W))   r.W   = W;
+      if (!isNaN(L))   r.L   = L;
+      if (!isNaN(pts)) r.pts = pts;
+      r.qualified = !!q;
+    });
+  }
+
+  propagateBracket();
+  renderAll();
+  renderStage1();
+  showToast("✅ Players updated!");
+  closeEditPlayersModal();
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GLOBAL RE-RENDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderAll() {
+  renderLeaderboard();
+  renderBracket();
+  renderAdmin();
+  renderAdminUsers();
+  renderMyStats();
+
+  // Sync user badge balance
+  if (state.currentUser && state.users[state.currentUser]) {
+    $("userBadge").textContent = `${state.currentUser} · ${state.users[state.currentUser].balance.toLocaleString()} FP`;
+  }
+}
+
+function renderMyStats() {
+  const section = $("myStatsSection");
+  if (!section) return;
+  if (!state.currentUser || !state.users[state.currentUser]) {
+    section.classList.add("hidden");
+    return;
+  }
+  const u = state.users[state.currentUser];
+  const s = u.stats || { placed: 0, won: 0, lost: 0, wagered: 0, returned: 0 };
+  const net     = s.returned - s.wagered;
+  const winRate = s.placed > 0 ? (s.won / s.placed * 100).toFixed(1) : '0.0';
+  const roi     = s.wagered > 0 ? ((net / s.wagered) * 100).toFixed(1) : '0.0';
+  section.classList.remove("hidden");
+  const stat = (label, value, color = 'text-white') => `
+    <div class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 flex flex-col gap-1">
+      <p class="text-xs text-gray-500 uppercase tracking-wide">${label}</p>
+      <p class="text-lg font-bold ${color}">${value}</p>
+    </div>
+  `;
+  $("myStatsGrid").innerHTML = [
+    stat('Balance',      `${u.balance.toLocaleString()} FP`, 'text-brand'),
+    stat('Bets Placed',  s.placed),
+    stat('Won / Lost',   `${s.won} / ${s.lost}`, s.won >= s.lost ? 'text-green-400' : 'text-red-400'),
+    stat('Win Rate',     `${winRate}%`, parseFloat(winRate) >= 50 ? 'text-green-400' : 'text-red-400'),
+    stat('Net P&amp;L',  `${net >= 0 ? '+' : ''}${net.toLocaleString()} FP`, net >= 0 ? 'text-green-400' : 'text-red-400'),
+    stat('ROI',          `${parseFloat(roi) >= 0 ? '+' : ''}${roi}%`, parseFloat(roi) >= 0 ? 'text-green-400' : 'text-red-400'),
+  ].join('');
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BOOT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+document.addEventListener("DOMContentLoaded", () => {
+  renderStage1();
+  renderAll();
+
+  // Firebase auth state listener
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      // Reload profile to get latest displayName after updateProfile
+      user.reload().then(() => {
+        setLoggedInUser(auth.currentUser);
+        renderAll();
+        document.getElementById('authOverlay').classList.add('hidden');
+      });
+    } else {
+      clearSession();
+      renderAll();
+      // Reset auth form
+      document.getElementById('authOverlay').classList.remove('hidden');
+      document.getElementById('authEmail').value    = '';
+      document.getElementById('authPassword').value = '';
+      document.getElementById('authName').value     = '';
+      document.getElementById('authError').classList.add('hidden');
+      switchAuthTab('login');
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled    = false;
+      btn.textContent = 'Login';
+    }
+  });
+});
+</script>
+</body>
+</html>
