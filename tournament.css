@@ -7,9 +7,12 @@ body { font-family: 'Segoe UI', sans-serif; }
   border: 1px solid #1f2937;
   border-radius: 14px;
   overflow: hidden;
-  width: 240px;
+  width: min(240px, calc(90vw));
   flex-shrink: 0;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+@media (min-width: 640px) {
+  .match-card { width: 240px; }
 }
 .match-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.5); border-color: #374151; }
 .match-card.finished { border-color: #065f46; }
@@ -174,6 +177,15 @@ body { font-family: 'Segoe UI', sans-serif; }
 
 /* ---------- Misc ---------- */
 .bet-input::-webkit-inner-spin-button { opacity:1; }
+
+/* ---------- Mobile touch improvements ---------- */
+@media (max-width: 639px) {
+  .place-bet-btn { padding: 10px 12px; font-size: 13px; }
+  .pick-btn { min-height: 52px; }
+  .player-avatar { width: 28px; height: 28px; font-size: 10px; }
+  .player-name { font-size: 12px; }
+}
+
 .card-hover { transition: transform 0.15s ease, box-shadow 0.15s ease; }
 .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
 details > summary { list-style: none; cursor: pointer; }

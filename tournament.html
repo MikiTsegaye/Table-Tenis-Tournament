@@ -77,31 +77,45 @@
   </div>
 
   <!-- ═══════════════════════ TOP NAV ═══════════════════════ -->
-  <header class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
-    <div class="flex items-center gap-3">
-      <span class="text-2xl">🏓</span>
+  <header class="bg-gray-900 border-b border-gray-800 px-3 md:px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center gap-2 md:gap-3">
+      <!-- Hamburger (mobile only) -->
+      <button onclick="openSidebar()" class="md:hidden flex flex-col gap-1 p-1.5 rounded-lg hover:bg-gray-800 transition-colors" aria-label="Open menu">
+        <span class="block w-5 h-0.5 bg-gray-300"></span>
+        <span class="block w-5 h-0.5 bg-gray-300"></span>
+        <span class="block w-5 h-0.5 bg-gray-300"></span>
+      </button>
+      <span class="text-xl md:text-2xl">🏓</span>
       <div>
-        <h1 class="text-lg font-bold text-white leading-none">PingPong Alfa Championship 2026</h1>
-        <p class="text-xs text-gray-400">Table Tennis Tournament — פלוגה א'</p>
+        <h1 class="text-sm md:text-lg font-bold text-white leading-none">PingPong Alfa 2026</h1>
+        <p class="text-xs text-gray-400 hidden sm:block">Table Tennis Tournament — פלוגה א'</p>
       </div>
     </div>
 
     <!-- Active user display -->
-    <div class="flex items-center gap-3">
-      <span id="adminBadge" class="hidden text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 rounded-full px-2.5 py-1">⚙️ Admin</span>
-      <div id="userBadge" class="hidden text-sm font-semibold bg-brand/20 text-brand border border-brand/40 rounded-full px-3 py-1"></div>
+    <div class="flex items-center gap-1.5 md:gap-3">
+      <span id="adminBadge" class="hidden text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40 rounded-full px-2 py-1">⚙️</span>
+      <div id="userBadge" class="hidden text-xs md:text-sm font-semibold bg-brand/20 text-brand border border-brand/40 rounded-full px-2.5 py-1 max-w-[110px] md:max-w-none truncate"></div>
       <button id="logoutBtn" onclick="handleLogout()"
-        class="hidden text-xs bg-red-600/20 hover:bg-red-600/30 border border-red-600/40 text-red-400 font-semibold rounded-full px-3 py-1.5 transition-colors">
+        class="hidden text-xs bg-red-600/20 hover:bg-red-600/30 border border-red-600/40 text-red-400 font-semibold rounded-full px-2 md:px-3 py-1.5 transition-colors">
         Logout
       </button>
     </div>
   </header>
 
   <!-- ═══════════════════════ BODY ═══════════════════════════ -->
-  <div class="flex flex-1 overflow-hidden">
+  <div class="flex flex-1 overflow-hidden relative">
+
+    <!-- Mobile sidebar overlay -->
+    <div id="sidebarOverlay" onclick="closeSidebar()" class="hidden fixed inset-0 z-30 bg-black/60 md:hidden"></div>
 
     <!-- ─────────────── SIDEBAR: Leaderboard ─────────────── -->
-    <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-4 gap-4 overflow-y-auto shrink-0">
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-72 md:w-64 bg-gray-900 border-r border-gray-800 flex flex-col p-4 gap-4 overflow-y-auto shrink-0 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+      <!-- Close button (mobile only) -->
+      <div class="flex items-center justify-between md:hidden mb-1">
+        <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Menu</span>
+        <button onclick="closeSidebar()" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+      </div>
       <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400">🏆 Leaderboard</h2>
       <div id="leaderboard" class="flex flex-col gap-2"></div>
 
@@ -139,7 +153,7 @@
     </aside>
 
     <!-- ─────────────── MAIN CONTENT ─────────────── -->
-    <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
+    <main class="flex-1 overflow-y-auto p-3 md:p-6 flex flex-col gap-5 md:gap-8">
 
       <!-- STAGE 1 RESULTS -->
       <section>
@@ -150,7 +164,9 @@
       <!-- STAGE 2 BRACKET -->
       <section>
         <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Stage 2 — Knockout Bracket</h2>
-        <div class="flex flex-col lg:flex-row gap-6 items-start" id="bracketContainer"></div>
+        <div class="overflow-x-auto pb-2 -mx-1">
+          <div class="flex flex-col lg:flex-row gap-6 items-start" id="bracketContainer" style="min-width:max-content"></div>
+        </div>
       </section>
 
       <!-- MY STATS -->
@@ -163,8 +179,8 @@
   </div>
 
   <!-- ═══════════════════════ EDIT PLAYERS MODAL ═══════════════════════ -->
-  <div id="editPlayersModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col" style="max-height:90vh">
+  <div id="editPlayersModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl sm:mx-4 flex flex-col" style="max-height:92vh">
 
       <!-- Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
@@ -187,8 +203,8 @@
   </div>
 
   <!-- ═══════════════════════ BET MODAL ═══════════════════════ -->
-  <div id="betModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+  <div id="betModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div class="bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-2xl p-5 md:p-6 w-full sm:max-w-md shadow-2xl overflow-y-auto" style="max-height:92vh">
       <h3 class="text-lg font-bold mb-1" id="modalTitle">Place a Bet</h3>
       <p class="text-sm text-gray-400 mb-4" id="modalSubtitle"></p>
 
@@ -1213,6 +1229,26 @@ function renderMyStats() {
     stat('Net P&amp;L',  `${net >= 0 ? '+' : ''}${net.toLocaleString()} FP`, net >= 0 ? 'text-green-400' : 'text-red-400'),
     stat('ROI',          `${parseFloat(roi) >= 0 ? '+' : ''}${roi}%`, parseFloat(roi) >= 0 ? 'text-green-400' : 'text-red-400'),
   ].join('');
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MOBILE SIDEBAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function openSidebar() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  s.classList.remove('-translate-x-full');
+  s.classList.add('translate-x-0');
+  o.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  const s = document.getElementById('sidebar');
+  const o = document.getElementById('sidebarOverlay');
+  s.classList.add('-translate-x-full');
+  s.classList.remove('translate-x-0');
+  o.classList.add('hidden');
+  document.body.style.overflow = '';
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
