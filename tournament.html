@@ -470,32 +470,42 @@ function resolveWinnings(match) {
 
   for (const [betUid, bet] of allBets) {
     if (bet.resolved) continue;
+
     const displayName = bet.displayName || betUid;
     const u = state.users[displayName];
 
     if (bet.pick === match.winner) {
-      // Parimutuel: proportional share of the total pool
-      const payout  = winnersPool > 0 ? Math.round((bet.wager / winnersPool) * totalPool) : bet.wager;
-      const profit  = payout - bet.wager;
-      // Credit via Firebase transaction — works even if winner is offline
+      const payout = winnersPool > 0 ? Math.round((bet.wager / winnersPool) * totalPool) : bet.wager;
+      const profit = payout - bet.wager;
+
+      // Atomic credit via transactions — works even if that user is offline
       db.ref(`userData/${betUid}/balance`).transaction(cur => (cur ?? 1000) + payout);
       db.ref(`userData/${betUid}/stats/won`).transaction(cur => (cur ?? 0) + 1);
       db.ref(`userData/${betUid}/stats/returned`).transaction(cur => (cur ?? 0) + payout);
+      // Mark this user's copy of the bet as resolved + record payout
+      db.ref(`userData/${betUid}/bets/${match.id}`).update({ resolved: true, payout, profit });
+
       // Update local state if currently logged in
       if (u) {
         u.balance += payout;
         if (!u.stats) u.stats = { placed:0, won:0, lost:0, wagered:0, returned:0 };
         u.stats.won++;
         u.stats.returned += payout;
+        if (u.bets[match.id]) { u.bets[match.id].resolved = true; u.bets[match.id].payout = payout; }
       }
       showToast(`🎉 ${displayName} won ${payout.toLocaleString()} FP on ${match.label}! (+${profit.toLocaleString()} FP)`);
     } else {
       db.ref(`userData/${betUid}/stats/lost`).transaction(cur => (cur ?? 0) + 1);
+      // Mark bet as resolved (lost)
+      db.ref(`userData/${betUid}/bets/${match.id}`).update({ resolved: true, payout: 0, profit: -bet.wager });
+
       if (u) {
         if (!u.stats) u.stats = { placed:0, won:0, lost:0, wagered:0, returned:0 };
         u.stats.lost++;
+        if (u.bets[match.id]) { u.bets[match.id].resolved = true; u.bets[match.id].payout = 0; }
       }
     }
+    // Mark resolved in match bets (will be saved to DB via saveMatchToDb in setWinner)
     bet.resolved = true;
   }
 }
@@ -612,7 +622,9 @@ function renderStage1() {
 function matchCard(m) {
   const bettable  = isBettable(m);
   const isTBD     = m.p1 === "TBD" || m.p2 === "TBD";
-  const userBet   = state.currentUid ? (m.bets[state.currentUid] || null) : null;
+  const userBet   = state.currentUid
+    ? (state.users[state.currentUser]?.bets?.[m.id] || m.bets[state.currentUid] || null)
+    : null;
   const totalBets = Object.values(m.bets).reduce((s, b) => s + b.wager, 0);
   const betCount  = Object.keys(m.bets).length;
 
@@ -637,9 +649,10 @@ function matchCard(m) {
     if (!bettable) {
       const wonLost = userBet?.resolved
         ? (m.winner === userBet.pick
-            ? `<div class="bet-result-won">🎉 Won! ${userBet.pick} &mdash; ${userBet.wager.toLocaleString()} FP</div>`
-            : `<div class="bet-result-lost">❌ Lost &mdash; ${userBet.wager.toLocaleString()} FP</div>`)
-        : (userBet ? `<div class="bet-result-won" style="color:#9ca3af">📋 ${userBet.pick} &mdash; ${userBet.wager.toLocaleString()} FP</div>` : '');
+            ? `<div class="bet-result-won">🎉 Won ${(userBet.payout ?? userBet.wager).toLocaleString()} FP
+                 <span style="color:#6b7280;font-weight:400"> (+${((userBet.payout ?? userBet.wager) - userBet.wager).toLocaleString()} profit)</span></div>`
+            : `<div class="bet-result-lost">❌ Lost ${userBet.wager.toLocaleString()} FP on ${userBet.pick}</div>`)
+        : (userBet ? `<div class="bet-result-won" style="color:#9ca3af">📋 ${userBet.pick} &mdash; ${userBet.wager.toLocaleString()} FP (pending)</div>` : '');
       return `
         <div class="bet-section">
           ${poolBar(m)}
@@ -904,16 +917,24 @@ function confirmBet() {
     return;
   }
 
-  // Place bet: deduct immediately, credit back on win
+  const uid  = state.currentUid;
+  const name = state.currentUser;
+  const bet  = { pick: selectedPick, wager, resolved: false, uid, displayName: name };
+
+  // Update local state optimistically
   user.balance -= wager;
   if (!user.stats) user.stats = { placed: 0, won: 0, lost: 0, wagered: 0, returned: 0 };
   user.stats.placed++;
   user.stats.wagered += wager;
-  const bet = { pick: selectedPick, wager, resolved: false, uid: state.currentUid, displayName: state.currentUser };
   user.bets[modalMatchId] = bet;
-  m.bets[state.currentUid] = bet;
-  saveMatchToDb(modalMatchId);
-  saveUserDataToDb();
+  m.bets[uid] = bet;
+
+  // Persist atomically via Firebase — each operation is independent and atomic
+  db.ref(`userData/${uid}/balance`).transaction(cur => (cur ?? 1000) - wager);
+  db.ref(`userData/${uid}/stats/placed`).transaction(cur => (cur ?? 0) + 1);
+  db.ref(`userData/${uid}/stats/wagered`).transaction(cur => (cur ?? 0) + wager);
+  db.ref(`userData/${uid}/bets/${modalMatchId}`).set(bet);
+  db.ref(`matches/${modalMatchId}/bets/${uid}`).set(bet);
 
   showToast(`Bet placed! ${selectedPick} — ${wager.toLocaleString()} FP`);
   closeModal();
@@ -923,17 +944,23 @@ function confirmBet() {
 
 function cancelBet(matchId) {
   if (!state.currentUser || !state.currentUid) return;
+  const uid  = state.currentUid;
   const m    = state.matches[matchId];
   const user = state.users[state.currentUser];
-  const bet  = m.bets[state.currentUid] || user.bets?.[matchId];
+  const bet  = m.bets[uid] || user.bets?.[matchId];
   if (!bet || !isBettable(m)) return;
 
-  // Refund
+  // Update local state
   user.balance += bet.wager;
   delete user.bets[matchId];
-  delete m.bets[state.currentUid];
-  saveMatchToDb(matchId);
-  saveUserDataToDb();
+  delete m.bets[uid];
+
+  // Atomic refund and removal from DB
+  db.ref(`userData/${uid}/balance`).transaction(cur => (cur ?? 1000) + bet.wager);
+  db.ref(`userData/${uid}/stats/placed`).transaction(cur => Math.max(0, (cur ?? 1) - 1));
+  db.ref(`userData/${uid}/stats/wagered`).transaction(cur => Math.max(0, (cur ?? 0) - bet.wager));
+  db.ref(`userData/${uid}/bets/${matchId}`).remove();
+  db.ref(`matches/${matchId}/bets/${uid}`).remove();
 
   showToast("Bet cancelled. FP refunded.", "info");
   renderAll();
