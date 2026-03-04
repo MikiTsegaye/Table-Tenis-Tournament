@@ -172,7 +172,7 @@
       <!-- MY STATS -->
       <section id="myStatsSection" class="hidden">
         <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">📊 My Betting Stats</h2>
-        <div id="myStatsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+        <div id="myStatsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
       </section>
 
     </main>
@@ -567,7 +567,7 @@ function renderLeaderboard() {
   const medals = ["🥇","🥈","🥉"];
   $("leaderboard").innerHTML = board.map((u, i) => {
     const s = u.stats;
-    const winRate = s.placed > 0 ? Math.round(s.won / s.placed * 100) : null;
+    const winRate = s.placed > 0 ? Math.min(100, Math.round(s.won / s.placed * 100)) : null;
     return `
     <div class="flex flex-col bg-gray-800 rounded-xl px-3 py-2 gap-1 ${u.name === state.currentUser ? "ring-1 ring-brand" : ""}">
       <div class="flex items-center justify-between">
@@ -1388,9 +1388,7 @@ function renderMyStats() {
   }
   const u = state.users[state.currentUser];
   const s = u.stats || { placed: 0, won: 0, lost: 0, wagered: 0, returned: 0 };
-  const net     = s.returned - s.wagered;
-  const winRate = s.placed > 0 ? (s.won / s.placed * 100).toFixed(1) : '0.0';
-  const roi     = s.wagered > 0 ? ((net / s.wagered) * 100).toFixed(1) : '0.0';
+  const winRate = s.placed > 0 ? Math.min(100, (s.won / s.placed * 100)).toFixed(1) : '0.0';
   section.classList.remove("hidden");
   const stat = (label, value, color = 'text-white') => `
     <div class="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 flex flex-col gap-1">
@@ -1403,8 +1401,6 @@ function renderMyStats() {
     stat('Bets Placed',  s.placed),
     stat('Won / Lost',   `${s.won} / ${s.lost}`, s.won >= s.lost ? 'text-green-400' : 'text-red-400'),
     stat('Win Rate',     `${winRate}%`, parseFloat(winRate) >= 50 ? 'text-green-400' : 'text-red-400'),
-    stat('Net P&amp;L',  `${net >= 0 ? '+' : ''}${net.toLocaleString()} FP`, net >= 0 ? 'text-green-400' : 'text-red-400'),
-    stat('ROI',          `${parseFloat(roi) >= 0 ? '+' : ''}${roi}%`, parseFloat(roi) >= 0 ? 'text-green-400' : 'text-red-400'),
   ].join('');
 }
 
