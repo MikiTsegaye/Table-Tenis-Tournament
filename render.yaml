@@ -1,10 +1,6 @@
 services:
   - type: web
     name: table-tennis-tournament
-    env: node
-    rootDir: my-project
-    buildCommand: cd my-project && npm install && npm run build
-    startCommand: node my-project/server.js
-    envVars:
-      - key: NODE_ENV
-        value: production
+    env: static
+    buildCommand: ""
+    staticPublishPath: .
