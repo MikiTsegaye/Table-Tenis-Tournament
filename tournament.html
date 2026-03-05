@@ -591,8 +591,8 @@ function renderLeaderboard() {
       </div>
       ${s.placed > 0 ? `
       <div class="flex items-center gap-2 text-xs text-gray-500">
-        <span class="text-green-400">✔ ${s.won}W</span>
-        <span class="text-red-400">✖ ${s.lost}L</span>
+        <span class="text-green-400">✔ ${s.won || 0}W</span>
+        <span class="text-red-400">✖ ${s.lost || 0}L</span>
         ${winRate !== null ? `<span class="ml-auto">${winRate}% WR</span>` : ""}
       </div>` : ""}
     </div>
