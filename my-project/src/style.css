@@ -25,9 +25,81 @@ a:hover {
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  flex-direction: column;
+  align-items: stretch;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* ── Hero Section ─────────────────────────────────────── */
+.hero {
+  position: relative;
+  width: 100%;
+  min-height: 60vh;
+  background-image: url('/logo.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #0d2131;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 33, 49, 0.72);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+  animation: heroFadeIn 0.9s ease both;
+}
+
+.hero-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.03em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.hero-subtitle {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: #f5a623;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.hero-desc {
+  margin: 0 auto 0.75rem;
+  max-width: 640px;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.7;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.hero-tagline {
+  margin: 0;
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  color: #f5a623;
+  font-weight: 600;
+  font-style: italic;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes heroFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 h1 {
@@ -40,6 +112,8 @@ h1 {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .logo {
