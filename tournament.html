@@ -294,6 +294,7 @@ let dbRefs = {}; // active DB refs for cleanup
    AUTH UI
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 let currentAuthTab = 'login';
+let isRegistering = false;
 
 function switchAuthTab(tab) {
   currentAuthTab = tab;
@@ -338,15 +339,19 @@ function handleAuth() {
       btn.textContent = 'Create Account';
       return;
     }
+    isRegistering = true;
     auth.createUserWithEmailAndPassword(email, password)
       .then(cred => cred.user.updateProfile({ displayName: name })
         .then(() => cred.user.reload())
         .then(() => {
+          isRegistering = false;
           setLoggedInUser(auth.currentUser);
           renderAll();
+          document.getElementById('authOverlay').classList.add('hidden');
         })
       )
       .catch(err => {
+        isRegistering = false;
         errEl.textContent = friendlyAuthError(err.code);
         errEl.classList.remove('hidden');
         btn.disabled = false;
@@ -1452,6 +1457,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Firebase auth state listener
   auth.onAuthStateChanged(user => {
     if (user) {
+      // Skip if we're in the middle of registration (updateProfile not done yet)
+      if (isRegistering) return;
       // Reload profile to get latest displayName after updateProfile
       user.reload().then(() => {
         setLoggedInUser(auth.currentUser);
