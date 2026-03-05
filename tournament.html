@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>🏓 Table Tennis Tournament</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -25,8 +25,8 @@
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col">
 
   <!-- ═══════════════════════ AUTH OVERLAY ═══════════════════════ -->
-  <div id="authOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+  <div id="authOverlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-950 px-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 sm:p-8 w-full max-w-sm shadow-2xl">
       <div class="flex flex-col items-center gap-1 mb-6">
         <span class="text-4xl">🏓</span>
         <h1 class="text-xl font-bold text-white mt-1">TT Championship 2026</h1>
@@ -77,7 +77,7 @@
   </div>
 
   <!-- ═══════════════════════ TOP NAV ═══════════════════════ -->
-  <header class="bg-gray-900 border-b border-gray-800 px-3 md:px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+  <header class="bg-gray-900 border-b border-gray-800 px-3 md:px-6 py-3 flex items-center justify-between sticky top-0 z-50" style="padding-top: max(0.75rem, env(safe-area-inset-top))">
     <div class="flex items-center gap-2 md:gap-3">
       <!-- Hamburger (mobile only) -->
       <button onclick="openSidebar()" class="md:hidden flex flex-col gap-1 p-1.5 rounded-lg hover:bg-gray-800 transition-colors" aria-label="Open menu">

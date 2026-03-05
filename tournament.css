@@ -1,4 +1,5 @@
-body { font-family: 'Segoe UI', sans-serif; }
+body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; }
 .bracket-line { border-color: #374151; }
 
 /* ---------- Card ---------- */
@@ -180,10 +181,34 @@ body { font-family: 'Segoe UI', sans-serif; }
 
 /* ---------- Mobile touch improvements ---------- */
 @media (max-width: 639px) {
-  .place-bet-btn { padding: 10px 12px; font-size: 13px; }
+  .place-bet-btn { padding: 12px 12px; font-size: 14px; -webkit-tap-highlight-color: transparent; }
   .pick-btn { min-height: 52px; }
   .player-avatar { width: 28px; height: 28px; font-size: 10px; }
   .player-name { font-size: 12px; }
+  .bracket-col-title { font-size: 11px; padding: 5px 14px; }
+  .match-card { width: min(220px, calc(85vw)); }
+}
+
+/* iOS safe area bottom padding */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  #toast { bottom: max(1.25rem, env(safe-area-inset-bottom)); }
+}
+
+/* Prevent iOS input zoom */
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select {
+  font-size: 16px;
+}
+
+/* Smooth scrolling for bracket on mobile */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Better touch targets for mobile buttons */
+button, .place-bet-btn, .cancel-bet-link {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .card-hover { transition: transform 0.15s ease, box-shadow 0.15s ease; }
