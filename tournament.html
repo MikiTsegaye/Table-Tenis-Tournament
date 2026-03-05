@@ -339,7 +339,13 @@ function handleAuth() {
       return;
     }
     auth.createUserWithEmailAndPassword(email, password)
-      .then(cred => cred.user.updateProfile({ displayName: name }))
+      .then(cred => cred.user.updateProfile({ displayName: name })
+        .then(() => cred.user.reload())
+        .then(() => {
+          setLoggedInUser(auth.currentUser);
+          renderAll();
+        })
+      )
       .catch(err => {
         errEl.textContent = friendlyAuthError(err.code);
         errEl.classList.remove('hidden');
