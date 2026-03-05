@@ -341,15 +341,14 @@ function handleAuth() {
     }
     isRegistering = true;
     auth.createUserWithEmailAndPassword(email, password)
-      .then(cred => cred.user.updateProfile({ displayName: name })
-        .then(() => cred.user.reload())
-        .then(() => {
+      .then(cred => {
+        return cred.user.updateProfile({ displayName: name }).then(() => {
           isRegistering = false;
-          setLoggedInUser(auth.currentUser);
+          setLoggedInUser(cred.user, name);
           renderAll();
           document.getElementById('authOverlay').classList.add('hidden');
-        })
-      )
+        });
+      })
       .catch(err => {
         isRegistering = false;
         errEl.textContent = friendlyAuthError(err.code);
@@ -1047,10 +1046,10 @@ function saveUserDataToDb() {
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    USER SESSION & DB LISTENERS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function attachUserListeners(fbUser) {
+function attachUserListeners(fbUser, overrideName) {
   detachUserListeners();
   const uid  = fbUser.uid;
-  const name = fbUser.displayName || fbUser.email.split("@")[0];
+  const name = overrideName || fbUser.displayName || fbUser.email.split("@")[0];
 
   // Register this user in /users
   db.ref(`users/${uid}`).set({ displayName: name, email: fbUser.email });
@@ -1160,16 +1159,16 @@ function detachUserListeners() {
   dbRefs = {};
 }
 
-function setLoggedInUser(fbUser) {
-  const name = fbUser.displayName || fbUser.email.split("@")[0];
+function setLoggedInUser(fbUser, overrideName) {
+  const name = overrideName || fbUser.displayName || fbUser.email.split("@")[0];
   if (!state.users[name]) state.users[name] = { balance: 1000, bets: {} };
-  state.currentUser = fbUser.displayName || name;
+  state.currentUser = name;
   state.currentUid  = fbUser.uid;
   const badge = $("userBadge");
   badge.textContent = `${name} · ${state.users[name].balance.toLocaleString()} FP`;
   badge.classList.remove("hidden");
   $("logoutBtn").classList.remove("hidden");
-  attachUserListeners(fbUser);
+  attachUserListeners(fbUser, name);
 }
 
 function clearSession() {
