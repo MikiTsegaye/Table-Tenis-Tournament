@@ -1454,6 +1454,18 @@ document.addEventListener("DOMContentLoaded", () => {
         setLoggedInUser(auth.currentUser);
         renderAll();
         document.getElementById('authOverlay').classList.add('hidden');
+        const btn = document.getElementById('authSubmitBtn');
+        btn.disabled    = false;
+        btn.textContent = 'Login';
+      }).catch(err => {
+        console.error('user.reload() failed:', err);
+        // Still attempt login with what we have
+        setLoggedInUser(user);
+        renderAll();
+        document.getElementById('authOverlay').classList.add('hidden');
+        const btn = document.getElementById('authSubmitBtn');
+        btn.disabled    = false;
+        btn.textContent = 'Login';
       });
     } else {
       clearSession();
