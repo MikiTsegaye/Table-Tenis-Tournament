@@ -2,5 +2,5 @@ services:
   - type: web
     name: table-tennis-tournament
     env: static
-    buildCommand: bash build.sh
+    buildCommand: bash scripts/build.sh
     staticPublishPath: .
