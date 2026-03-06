@@ -2,4 +2,6 @@ node_modules/
 my-project/node_modules/
 my-project/dist/
 .env
+config.js
+.vs/
 .DS_Store

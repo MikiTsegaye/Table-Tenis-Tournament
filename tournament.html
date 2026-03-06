@@ -271,20 +271,11 @@
     <div id="toastInner" class="px-4 py-3 rounded-xl text-sm font-medium shadow-xl"></div>
   </div>
 
+<script src="config.js"></script>
 <script>
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   FIREBASE INIT
+   FIREBASE INIT  (config loaded from config.js)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-const firebaseConfig = {
-  apiKey: "AIzaSyCA--Cu7k4bwaUNQ6-Du7tse-D1dotoXvE",
-  authDomain: "table-tenis-tournament.firebaseapp.com",
-  databaseURL: "https://table-tenis-tournament-default-rtdb.firebaseio.com",
-  projectId: "table-tenis-tournament",
-  storageBucket: "table-tenis-tournament.firebasestorage.app",
-  messagingSenderId: "161324523644",
-  appId: "1:161324523644:web:b618f34309eb7e8bcbe9f9",
-  measurementId: "G-YWJCHN1V2J"
-};
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.database();
