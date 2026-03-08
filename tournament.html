@@ -176,6 +176,22 @@
     <!-- ─────────────── MAIN CONTENT ─────────────── -->
     <main class="flex-1 overflow-y-auto p-3 md:p-6 flex flex-col gap-5 md:gap-8">
 
+      <!-- BETTING WINDOW BANNER -->
+      <div id="bettingBanner" class="hidden">
+        <div id="bettingBannerInner" class="rounded-xl px-4 py-3 text-center text-sm font-semibold"></div>
+      </div>
+
+      <!-- ADMIN: TOURNAMENT STAGE CONTROLS -->
+      <div id="stageControlSection" class="hidden">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col sm:flex-row items-center gap-3">
+          <div class="flex-1">
+            <p class="text-xs text-gray-400 uppercase tracking-widest font-bold">Tournament Stage</p>
+            <p id="stageLabel" class="text-sm font-semibold text-white mt-1"></p>
+          </div>
+          <div id="stageButtons" class="flex gap-2 flex-wrap"></div>
+        </div>
+      </div>
+
       <!-- STAGE 1 RESULTS -->
       <section>
         <h2 class="text-sm font-bold uppercase tracking-widest text-gray-400 mb-3">Stage 1 — Group Results</h2>
@@ -254,18 +270,18 @@
         <!-- Payout preview -->
         <div id="payoutPreview" class="hidden bg-gray-800 rounded-xl px-4 py-3 flex flex-col gap-1.5">
           <div class="flex justify-between text-xs text-gray-400">
-            <span>Current pool odds</span>
+            <span>Odds</span>
             <span id="previewOdds" class="font-semibold text-white"></span>
           </div>
           <div class="flex justify-between text-xs text-gray-400">
-            <span>Estimated payout</span>
+            <span>Payout if you win</span>
             <span id="previewPayout" class="font-bold text-brand"></span>
           </div>
           <div class="flex justify-between text-xs text-gray-400">
-            <span>Estimated profit</span>
+            <span>Profit</span>
             <span id="previewProfit" class="font-semibold"></span>
           </div>
-          <p class="text-xs text-gray-600 mt-0.5">Payout may change as others place bets.</p>
+          <p class="text-xs text-gray-600 mt-0.5">Win = 2× your wager. Lose = wager is lost.</p>
         </div>
 
         <p id="modalError" class="text-xs text-red-400 hidden"></p>
@@ -389,6 +405,12 @@ const state = {
   allUsers:    {},   // uid → { displayName, email }
   adminUids:   {},   // uid → true
 
+  // Tournament phase: "group" → "betting" → "knockout"
+  // "group"    = Stage 1 in progress, no betting allowed
+  // "betting"  = Groups done, betting window open for Stage 2 matches
+  // "knockout" = Betting closed, knockout matches being played
+  tournamentStage: "group",
+
   users: {},  // populated dynamically from Firebase auth
 
   stage1: {
@@ -418,15 +440,15 @@ const state = {
     ],
   },
 
-  // matchId → { id, round, label, p1, p2, status, winner, bets: { userName: { pick, wager } } }
+  // matchId → { id, round, label, p1, p2, status, winner, bets: { uid: { pick, wager } } }
   matches: {
-    qf1: { id:"qf1", round:"Quarterfinals", label:"QF 1", p1:"Zhang Wei",    p2:"D. Ovtcharov", status:"Upcoming",  winner:null, bets:{} },
-    qf2: { id:"qf2", round:"Quarterfinals", label:"QF 2", p1:"Timo Boll",    p2:"Liu Ming",     status:"Upcoming", winner:null, bets:{} },
-    qf3: { id:"qf3", round:"Quarterfinals", label:"QF 3", p1:"Ma Long",      p2:"Wang Chuqin",  status:"Upcoming",  winner:null, bets:{} },
-    qf4: { id:"qf4", round:"Quarterfinals", label:"QF 4", p1:"Fan Zhendong", p2:"Xu Xin",       status:"Upcoming",  winner:null, bets:{} },
-    sf1: { id:"sf1", round:"Semifinals",    label:"SF 1", p1:"TBD",          p2:"TBD",          status:"Upcoming",  winner:null, bets:{} },
-    sf2: { id:"sf2", round:"Semifinals",    label:"SF 2", p1:"TBD",          p2:"TBD",          status:"Upcoming",  winner:null, bets:{} },
-    fin: { id:"fin", round:"Final",         label:"Final",p1:"TBD",          p2:"TBD",          status:"Upcoming",  winner:null, bets:{} },
+    qf1: { id:"qf1", round:"Quarterfinals", label:"QF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    qf2: { id:"qf2", round:"Quarterfinals", label:"QF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    qf3: { id:"qf3", round:"Quarterfinals", label:"QF 3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    qf4: { id:"qf4", round:"Quarterfinals", label:"QF 4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    sf1: { id:"sf1", round:"Semifinals",    label:"SF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    sf2: { id:"sf2", round:"Semifinals",    label:"SF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    fin: { id:"fin", round:"Final",         label:"Final",p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
   },
 
   // bracket wiring: which matches feed into which
@@ -451,7 +473,11 @@ let selectedPick  = null;
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const $ = id => document.getElementById(id);
 function isBettable(m) {
+  // Betting only allowed during the "betting" window (after groups, before knockout starts)
+  if (state.tournamentStage !== "betting") return false;
+  // Once a match goes Live or Finished, bets are locked
   if (m.status !== "Upcoming") return false;
+  // Timer-based deadline still applies if set
   const deadline = state.betTimers[m.round];
   if (deadline && Date.now() > deadline) return false;
   return true;
@@ -528,6 +554,67 @@ function sortedLeaderboard() {
     .sort((a, b) => b.balance - a.balance);
 }
 
+/* ── Generate Stage 2 matchups from group rankings ──
+   Standard seeding: 1st of Group A vs 2nd of Group B, etc.
+   QF1: A1 vs B2    QF2: B1 vs A2
+   QF3: C1 vs D2    QF4: D1 vs C2
+*/
+function generateStage2Matchups() {
+  const groups = state.stage1;
+  // Sort each group by pts desc, then W desc, then L asc
+  const ranked = {};
+  for (const [gname, rows] of Object.entries(groups)) {
+    ranked[gname] = [...rows].sort((a, b) => b.pts - a.pts || b.W - a.W || a.L - b.L);
+  }
+  const A = ranked["Group A"], B = ranked["Group B"];
+  const C = ranked["Group C"], D = ranked["Group D"];
+
+  // Matchups: 1st vs 2nd cross-group
+  state.matches.qf1.p1 = A[0].player; state.matches.qf1.p2 = B[1].player;
+  state.matches.qf2.p1 = B[0].player; state.matches.qf2.p2 = A[1].player;
+  state.matches.qf3.p1 = C[0].player; state.matches.qf3.p2 = D[1].player;
+  state.matches.qf4.p1 = D[0].player; state.matches.qf4.p2 = C[1].player;
+
+  // Mark qualified players in stage1
+  for (const [gname, rows] of Object.entries(groups)) {
+    const sortedNames = ranked[gname].map(r => r.player);
+    rows.forEach(r => { r.qualified = sortedNames.indexOf(r.player) < 2; });
+  }
+}
+
+/* ── Admin: Transition from Group Stage → Betting Window ── */
+function transitionToStage2() {
+  if (!state.isAdmin) return;
+  // Validate: each group needs at least 2 players with points
+  for (const [gname, rows] of Object.entries(state.stage1)) {
+    const withPts = rows.filter(r => r.pts > 0);
+    if (withPts.length < 2) {
+      showToast(`${gname} needs at least 2 players with points!`, 'error');
+      return;
+    }
+  }
+  generateStage2Matchups();
+  state.tournamentStage = 'betting';
+
+  // Persist to Firebase
+  db.ref('tournamentStage').set('betting');
+  saveStage1ToDb();
+  ['qf1','qf2','qf3','qf4'].forEach(mid => saveMatchToDb(mid));
+
+  renderAll();
+  renderStage1();
+  showToast('🎯 Groups finalized! Betting window is now OPEN.', 'success');
+}
+
+/* ── Admin: Manually close betting & start knockout ── */
+function closeBettingWindow() {
+  if (!state.isAdmin) return;
+  state.tournamentStage = 'knockout';
+  db.ref('tournamentStage').set('knockout');
+  renderAll();
+  showToast('🔒 Betting window closed. Knockout stage begins!', 'info');
+}
+
 /* Propagate winners forward through the bracket */
 function propagateBracket() {
   for (const [targetId, feedIds] of Object.entries(state.bracketFeeds)) {
@@ -538,12 +625,9 @@ function propagateBracket() {
   }
 }
 
-/* Resolve winnings when a match is set to Finished + winner (parimutuel pool) */
+/* Resolve winnings when a match is set to Finished + winner (fixed 2× payout) */
 function resolveWinnings(match) {
-  const allBets     = Object.entries(match.bets);
-  const totalPool   = allBets.reduce((s, [, b]) => s + b.wager, 0);
-  const winnersPool = allBets.filter(([, b]) => b.pick === match.winner)
-                             .reduce((s, [, b]) => s + b.wager, 0);
+  const allBets = Object.entries(match.bets);
 
   for (const [betUid, bet] of allBets) {
     if (bet.resolved) continue;
@@ -552,17 +636,15 @@ function resolveWinnings(match) {
     const u = state.users[displayName];
 
     if (bet.pick === match.winner) {
-      const payout = winnersPool > 0 ? Math.round((bet.wager / winnersPool) * totalPool) : bet.wager;
-      const profit = payout - bet.wager;
+      // Fixed 2× payout: winner gets double their wager
+      const payout = bet.wager * 2;
+      const profit = bet.wager; // profit = payout - wager = wager
 
-      // Atomic credit via transactions — works even if that user is offline
       db.ref(`userData/${betUid}/balance`).transaction(cur => (cur ?? 1000) + payout);
       db.ref(`userData/${betUid}/stats/won`).transaction(cur => (cur ?? 0) + 1);
       db.ref(`userData/${betUid}/stats/returned`).transaction(cur => (cur ?? 0) + payout);
-      // Mark this user's copy of the bet as resolved + record payout
       db.ref(`userData/${betUid}/bets/${match.id}`).update({ resolved: true, payout, profit });
 
-      // Update local state if currently logged in
       if (u) {
         u.balance += payout;
         if (!u.stats) u.stats = { placed:0, won:0, lost:0, wagered:0, returned:0 };
@@ -573,7 +655,6 @@ function resolveWinnings(match) {
       showToast(`🎉 ${displayName} won ${payout.toLocaleString()} FP on ${match.label}! (+${profit.toLocaleString()} FP)`);
     } else {
       db.ref(`userData/${betUid}/stats/lost`).transaction(cur => (cur ?? 0) + 1);
-      // Mark bet as resolved (lost)
       db.ref(`userData/${betUid}/bets/${match.id}`).update({ resolved: true, payout: 0, profit: -bet.wager });
 
       if (u) {
@@ -582,18 +663,13 @@ function resolveWinnings(match) {
         if (u.bets[match.id]) { u.bets[match.id].resolved = true; u.bets[match.id].payout = 0; }
       }
     }
-    // Mark resolved in match bets (will be saved to DB via saveMatchToDb in setWinner)
     bet.resolved = true;
   }
 }
 
-/* Current parimutuel multiplier for a given pick (incl. a hypothetical extra wager) */
+/* Fixed 2× odds for all bets */
 function calcOdds(match, pick, extraWager = 0) {
-  const bets = Object.values(match.bets);
-  const total    = bets.reduce((s, b) => s + b.wager, 0) + extraWager;
-  const pickPool = bets.filter(b => b.pick === pick).reduce((s, b) => s + b.wager, 0) + extraWager;
-  if (total === 0 || pickPool === 0) return null;
-  return total / pickPool;
+  return 2;
 }
 
 /* Pool distribution bar HTML */
@@ -987,6 +1063,12 @@ function setMatchStatus(matchId, newStatus) {
   m.status = newStatus;
   // If set to Upcoming from another state, clear winner
   if (newStatus === "Upcoming") m.winner = null;
+  // When first match goes Live, auto-close betting window
+  if (newStatus === "In Progress" && state.tournamentStage === "betting") {
+    state.tournamentStage = "knockout";
+    db.ref('tournamentStage').set('knockout');
+    showToast('🔒 Betting window closed — knockout stage started!', 'info');
+  }
   saveMatchToDb(matchId);
   renderAll();
   showToast(`${m.label} → ${newStatus}`, "info");
@@ -1218,6 +1300,14 @@ function attachUserListeners(fbUser, overrideName) {
   dbRefs.adminsList.on("value", snap => {
     state.adminUids = snap.val() || {};
     renderAdminUsers();
+  });
+
+  // ── Live-listen to tournament stage ──
+  dbRefs.tournamentStage = db.ref('tournamentStage');
+  dbRefs.tournamentStage.on('value', snap => {
+    const val = snap.val();
+    if (val) state.tournamentStage = val;
+    renderAll();
   });
 
   // ── Live-listen to bet timers ──
@@ -1543,12 +1633,61 @@ function renderAll() {
   renderAdmin();
   renderAdminUsers();
   renderBetTimersAdmin();
+  renderBettingBanner();
+  renderStageControls();
   renderMyStats();
 
   // Sync user badge balance
   if (state.currentUser && state.users[state.currentUser]) {
     $("userBadge").textContent = `${state.currentUser} · ${state.users[state.currentUser].balance.toLocaleString()} FP`;
   }
+}
+
+/* ── Betting Window Banner (visible to all users) ── */
+function renderBettingBanner() {
+  const banner = $('bettingBanner');
+  const inner  = $('bettingBannerInner');
+  if (!banner || !inner) return;
+
+  if (state.tournamentStage === 'betting') {
+    banner.classList.remove('hidden');
+    inner.className = 'rounded-xl px-4 py-3 text-center text-sm font-semibold bg-brand/15 border border-brand/30 text-brand';
+    inner.innerHTML = '💰 Betting window is <strong>OPEN</strong>! Place your bets on Stage 2 matches before the first match goes live.';
+  } else if (state.tournamentStage === 'knockout') {
+    banner.classList.remove('hidden');
+    inner.className = 'rounded-xl px-4 py-3 text-center text-sm font-semibold bg-red-600/10 border border-red-600/30 text-red-400';
+    inner.textContent = '🔒 Betting is closed. Knockout stage is in progress.';
+  } else {
+    // group stage — betting not yet available
+    banner.classList.remove('hidden');
+    inner.className = 'rounded-xl px-4 py-3 text-center text-sm font-semibold bg-blue-600/10 border border-blue-600/30 text-blue-400';
+    inner.textContent = '📋 Group stage in progress. Betting opens after groups are finalized.';
+  }
+}
+
+/* ── Admin: Tournament Stage Controls ── */
+function renderStageControls() {
+  const section = $('stageControlSection');
+  if (!section) return;
+  if (!state.isAdmin) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+
+  const labels = {
+    group:    '📋 Stage 1 — Group Stage (in progress)',
+    betting:  '💰 Betting Window — OPEN',
+    knockout: '🏆 Stage 2 — Knockout (in progress)',
+  };
+  $('stageLabel').textContent = labels[state.tournamentStage] || state.tournamentStage;
+
+  let btns = '';
+  if (state.tournamentStage === 'group') {
+    btns = `<button onclick="transitionToStage2()" class="text-xs px-4 py-2 rounded-lg bg-brand hover:bg-brand-dark text-gray-950 font-bold">Finalize Groups & Open Betting</button>`;
+  } else if (state.tournamentStage === 'betting') {
+    btns = `<button onclick="closeBettingWindow()" class="text-xs px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold">Close Betting & Start Knockout</button>`;
+  } else {
+    btns = `<span class="text-xs text-gray-500 italic">Knockout stage active — no actions available.</span>`;
+  }
+  $('stageButtons').innerHTML = btns;
 }
 
 function renderMyStats() {

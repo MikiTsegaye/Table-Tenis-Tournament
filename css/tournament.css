@@ -234,3 +234,7 @@ details > summary::-webkit-details-marker { display: none; }
 .bet-timer-countdown.timer-active { color: #34d399; }
 .bet-timer-countdown.timer-urgent { color: #f87171; }
 .bet-timer-countdown.timer-expired { color: #6b7280; }
+
+/* ---------- Stage control & betting banner ---------- */
+#bettingBanner { animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
