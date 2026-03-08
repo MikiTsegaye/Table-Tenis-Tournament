@@ -219,3 +219,18 @@ details > summary::-webkit-details-marker { display: none; }
 .winner-glow { animation: flashGold 1.8s infinite ease-in-out; color:#fbbf24; }
 @keyframes pulse-ring { 0%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)} 70%{box-shadow:0 0 0 6px rgba(16,185,129,0)} 100%{box-shadow:0 0 0 0 rgba(16,185,129,0)} }
 .in-progress-card { animation: pulse-ring 2s infinite; }
+
+/* ---------- Bet Timer Bar ---------- */
+.bet-timer-bar {
+  padding: 4px 12px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  border-bottom: 1px solid #1f2937;
+}
+.bet-timer-bar.timer-active { background: rgba(16, 185, 129, 0.08); color: #34d399; }
+.bet-timer-bar.timer-urgent { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+.bet-timer-bar.timer-expired { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+.bet-timer-countdown.timer-active { color: #34d399; }
+.bet-timer-countdown.timer-urgent { color: #f87171; }
+.bet-timer-countdown.timer-expired { color: #6b7280; }

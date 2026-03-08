@@ -151,6 +151,18 @@
         </details>
       </div>
 
+      <!-- Bet Timers (admin only) -->
+      <div id="betTimersSection" class="hidden">
+        <hr class="border-gray-800 my-1" />
+        <details class="group">
+          <summary class="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-200">
+            ⏱ Bet Timers
+            <span class="group-open:rotate-180 transition-transform">▾</span>
+          </summary>
+          <div id="betTimersPanel" class="mt-3 flex flex-col gap-3"></div>
+        </details>
+      </div>
+
       <!-- Edit Players (admin only) -->
       <div id="editPlayersBtnWrap" class="hidden">
         <hr class="border-gray-800 my-1" />
@@ -423,6 +435,9 @@ const state = {
     sf2: ["qf3", "qf4"],
     fin: ["sf1", "sf2"],
   },
+
+  // bet timer deadlines per round (round → deadline timestamp ms)
+  betTimers: {},
 };
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -435,7 +450,56 @@ let selectedPick  = null;
    HELPERS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const $ = id => document.getElementById(id);
-const isBettable = m => m.status === "Upcoming";
+function isBettable(m) {
+  if (m.status !== "Upcoming") return false;
+  const deadline = state.betTimers[m.round];
+  if (deadline && Date.now() > deadline) return false;
+  return true;
+}
+
+/* ── Timer helpers ── */
+let countdownInterval = null;
+
+function formatCountdown(ms) {
+  if (ms <= 0) return 'Expired';
+  const s = Math.floor(ms / 1000) % 60;
+  const m = Math.floor(ms / 60000) % 60;
+  const h = Math.floor(ms / 3600000) % 24;
+  const d = Math.floor(ms / 86400000);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function getTimerInfo(round) {
+  const deadline = state.betTimers[round];
+  if (!deadline) return { active: false, expired: false, remaining: 0, deadline: null };
+  const remaining = deadline - Date.now();
+  return { active: true, expired: remaining <= 0, remaining: Math.max(0, remaining), deadline };
+}
+
+function startCountdownInterval() {
+  if (countdownInterval) return;
+  countdownInterval = setInterval(() => {
+    document.querySelectorAll('.bet-timer-countdown').forEach(el => {
+      const round = el.dataset.round;
+      const info = getTimerInfo(round);
+      if (!info.active) { el.textContent = ''; return; }
+      if (info.expired) {
+        el.innerHTML = '🔒 Betting closed';
+        el.className = 'bet-timer-countdown timer-expired';
+      } else {
+        el.innerHTML = '⏱ ' + formatCountdown(info.remaining);
+        el.className = 'bet-timer-countdown ' + (info.remaining < 300000 ? 'timer-urgent' : 'timer-active');
+      }
+    });
+  }, 1000);
+}
+
+function stopCountdownInterval() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+}
 
 function showToast(msg, type = "success") {
   const t = $("toast"), ti = $("toastInner");
@@ -711,12 +775,24 @@ function matchCard(m) {
   const statusClass = m.status === 'Finished' ? 'finished' : m.status === 'In Progress' ? 'in-progress' : '';
   const ipPulse     = m.status === 'In Progress' ? ' in-progress-card' : '';
 
+  // Timer display
+  const timerInfo = getTimerInfo(m.round);
+  const timerHTML = (() => {
+    if (!timerInfo.active || m.status !== 'Upcoming') return '';
+    if (timerInfo.expired) {
+      return `<div class="bet-timer-bar timer-expired"><span class="bet-timer-countdown timer-expired" data-round="${m.round}">🔒 Betting closed</span></div>`;
+    }
+    const cls = timerInfo.remaining < 300000 ? 'timer-urgent' : 'timer-active';
+    return `<div class="bet-timer-bar ${cls}"><span class="bet-timer-countdown ${cls}" data-round="${m.round}">⏱ ${formatCountdown(timerInfo.remaining)}</span></div>`;
+  })();
+
   return `
     <div class="match-card ${statusClass}${ipPulse}">
       <div class="match-card-header">
         <span style="font-size:11px;font-weight:700;color:#6b7280;letter-spacing:0.05em">${m.label}</span>
         ${badgeHTML(m.status)}
       </div>
+      ${timerHTML}
       ${playerRow(m.p1, 'p1')}
       <div class="vs-divider"><span class="vs-text">VS</span></div>
       ${playerRow(m.p2, 'p2')}
@@ -756,6 +832,74 @@ function renderBracket() {
       ${roundColumn('Final', ['fin'])}
     </div>
   `;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RENDER: BET TIMERS ADMIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function renderBetTimersAdmin() {
+  const panel = $('betTimersPanel');
+  if (!panel || !state.isAdmin) return;
+  const rounds = ['Quarterfinals', 'Semifinals', 'Final'];
+  panel.innerHTML = rounds.map(round => {
+    const deadline = state.betTimers[round];
+    const info = getTimerInfo(round);
+    // Format deadline for datetime-local input (local timezone)
+    let inputVal = '';
+    if (deadline) {
+      const d = new Date(deadline);
+      inputVal = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0') + 'T' +
+        String(d.getHours()).padStart(2, '0') + ':' +
+        String(d.getMinutes()).padStart(2, '0');
+    }
+    const statusText = !info.active
+      ? '<span class="text-gray-500">No timer set</span>'
+      : info.expired
+        ? '<span class="text-red-400">🔒 Closed</span>'
+        : '<span class="text-green-400">⏱ ' + formatCountdown(info.remaining) + ' left</span>';
+    return `
+      <div class="bg-gray-800 rounded-lg p-3 text-xs flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-gray-200">${round}</span>
+          ${statusText}
+        </div>
+        <div class="flex gap-2 items-end">
+          <input type="datetime-local" id="timer_${round.replace(/\s/g, '_')}"
+            value="${inputVal}"
+            class="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-200 min-w-0" />
+          <button onclick="saveBetTimer('${round}')"
+            class="bg-brand hover:bg-brand-dark text-gray-950 font-semibold rounded px-3 py-1 whitespace-nowrap">Set</button>
+          ${deadline ? `<button onclick="clearBetTimer('${round}')" class="bg-red-600/20 hover:bg-red-600/30 border border-red-600/40 text-red-400 font-semibold rounded px-2 py-1 whitespace-nowrap">Clear</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function saveBetTimer(round) {
+  if (!state.isAdmin) return;
+  const safeRound = round.replace(/\s/g, '_');
+  const input = $('timer_' + safeRound);
+  if (!input || !input.value) { showToast('Please pick a date & time.', 'error'); return; }
+  const deadline = new Date(input.value).getTime();
+  if (isNaN(deadline)) { showToast('Invalid date/time.', 'error'); return; }
+  db.ref('betTimers/' + round).set(deadline);
+  state.betTimers[round] = deadline;
+  showToast('⏱ Timer set for ' + round + '!');
+  renderBetTimersAdmin();
+  renderBracket();
+  startCountdownInterval();
+}
+
+function clearBetTimer(round) {
+  if (!state.isAdmin) return;
+  db.ref('betTimers/' + round).remove();
+  delete state.betTimers[round];
+  showToast('Timer cleared for ' + round + '.', 'info');
+  renderBetTimersAdmin();
+  renderBracket();
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1057,6 +1201,7 @@ function attachUserListeners(fbUser, overrideName) {
     state.isAdmin ? $("adminBadge").classList.remove("hidden") : $("adminBadge").classList.add("hidden");
     state.isAdmin ? $("userMgmtSection").classList.remove("hidden") : $("userMgmtSection").classList.add("hidden");
     state.isAdmin ? $("editPlayersBtnWrap").classList.remove("hidden") : $("editPlayersBtnWrap").classList.add("hidden");
+    state.isAdmin ? $("betTimersSection").classList.remove("hidden") : $("betTimersSection").classList.add("hidden");
     renderAll();
     renderAdminUsers();
   });
@@ -1073,6 +1218,19 @@ function attachUserListeners(fbUser, overrideName) {
   dbRefs.adminsList.on("value", snap => {
     state.adminUids = snap.val() || {};
     renderAdminUsers();
+  });
+
+  // ── Live-listen to bet timers ──
+  dbRefs.betTimers = db.ref('betTimers');
+  dbRefs.betTimers.on('value', snap => {
+    const data = snap.val() || {};
+    state.betTimers = {};
+    for (const [round, deadline] of Object.entries(data)) {
+      state.betTimers[round] = deadline;
+    }
+    renderBetTimersAdmin();
+    renderBracket();
+    startCountdownInterval();
   });
 
   // ── Live-listen to match data (admin changes, bets) ──
@@ -1384,6 +1542,7 @@ function renderAll() {
   renderBracket();
   renderAdmin();
   renderAdminUsers();
+  renderBetTimersAdmin();
   renderMyStats();
 
   // Sync user badge balance

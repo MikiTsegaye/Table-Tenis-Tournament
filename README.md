@@ -36,6 +36,8 @@ A real-time table tennis tournament tracker with a built-in **parimutuel betting
 
 ---
 
+
+
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
@@ -47,3 +49,25 @@ A real-time table tennis tournament tracker with a built-in **parimutuel betting
 | Hosting | [Render](https://render.com) (Static Site) |
 
 ---
+
+## 📸 Screenshots
+
+<details>
+<summary>Click to expand</summary>
+
+### Login
+The app greets users with a clean login/register overlay.
+
+### Group Stage
+Four groups with live win/loss standings and qualification badges.
+
+### Knockout Bracket
+Visual bracket with match cards, live odds bars, and bet buttons.
+
+### Betting Modal
+Pick a winner, set your wager, and see estimated payout before confirming.
+
+</details>
+
+---
+
