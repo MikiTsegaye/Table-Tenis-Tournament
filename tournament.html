@@ -484,6 +484,14 @@ const state = {
 
   // matchId → { id, round, label, p1, p2, status, winner, bets: { uid: { pick, wager } } }
   matches: {
+    r16_1: { id:"r16_1", round:"Round of 16", label:"R16 #1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_2: { id:"r16_2", round:"Round of 16", label:"R16 #2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_3: { id:"r16_3", round:"Round of 16", label:"R16 #3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_4: { id:"r16_4", round:"Round of 16", label:"R16 #4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_5: { id:"r16_5", round:"Round of 16", label:"R16 #5", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_6: { id:"r16_6", round:"Round of 16", label:"R16 #6", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_7: { id:"r16_7", round:"Round of 16", label:"R16 #7", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_8: { id:"r16_8", round:"Round of 16", label:"R16 #8", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
     qf1: { id:"qf1", round:"Quarterfinals", label:"QF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
     qf2: { id:"qf2", round:"Quarterfinals", label:"QF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
     qf3: { id:"qf3", round:"Quarterfinals", label:"QF 3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
@@ -495,6 +503,10 @@ const state = {
 
   // bracket wiring: which matches feed into which
   bracketFeeds: {
+    qf1: ["r16_1", "r16_2"],
+    qf2: ["r16_3", "r16_4"],
+    qf3: ["r16_5", "r16_6"],
+    qf4: ["r16_7", "r16_8"],
     sf1: ["qf1", "qf2"],
     sf2: ["qf3", "qf4"],
     fin: ["sf1", "sf2"],
@@ -597,30 +609,41 @@ function sortedLeaderboard() {
 }
 
 /* ── Generate Stage 2 matchups from group rankings ──
-   Standard seeding: 1st of Group A vs 2nd of Group B, etc.
-   QF1: A1 vs B2    QF2: B1 vs A2
-   QF3: C1 vs D2    QF4: D1 vs C2
+   Collects top players from each group and seeds them into the Round of 16.
+   Cross-group seeding: 1st seeds vs 4th seeds, 2nd vs 3rd, across groups.
 */
 function generateStage2Matchups() {
   const groups = state.stage1;
+  const groupNames = Object.keys(groups);
   // Sort each group by pts desc, then W desc, then L asc
   const ranked = {};
   for (const [gname, rows] of Object.entries(groups)) {
     ranked[gname] = [...rows].sort((a, b) => b.pts - a.pts || b.W - a.W || a.L - b.L);
   }
-  const A = ranked["Group A"], B = ranked["Group B"];
-  const C = ranked["Group C"], D = ranked["Group D"];
 
-  // Matchups: 1st vs 2nd cross-group
-  state.matches.qf1.p1 = A[0].player; state.matches.qf1.p2 = B[1].player;
-  state.matches.qf2.p1 = B[0].player; state.matches.qf2.p2 = A[1].player;
-  state.matches.qf3.p1 = C[0].player; state.matches.qf3.p2 = D[1].player;
-  state.matches.qf4.p1 = D[0].player; state.matches.qf4.p2 = C[1].player;
+  // Collect all players by seed position across groups
+  // seeds[0] = all 1st-place finishers, seeds[1] = all 2nd-place, etc.
+  const maxPerGroup = Math.max(...groupNames.map(g => ranked[g].length));
+  const seeds = [];
+  for (let pos = 0; pos < maxPerGroup; pos++) {
+    for (const gname of groupNames) {
+      if (ranked[gname][pos]) seeds.push(ranked[gname][pos].player);
+    }
+  }
 
-  // Mark qualified players in stage1
+  // Fill R16 matches: top seed vs bottom seed (1 vs 16, 2 vs 15, etc.)
+  const r16Ids = ['r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8'];
+  for (let i = 0; i < 8; i++) {
+    const m = state.matches[r16Ids[i]];
+    m.p1 = seeds[i] || 'TBD';
+    m.p2 = seeds[15 - i] || 'TBD';
+  }
+
+  // Mark qualified players in stage1 (top 4 per group qualify for R16)
+  const qualifiedPerGroup = Math.ceil(16 / groupNames.length);
   for (const [gname, rows] of Object.entries(groups)) {
     const sortedNames = ranked[gname].map(r => r.player);
-    rows.forEach(r => { r.qualified = sortedNames.indexOf(r.player) < 2; });
+    rows.forEach(r => { r.qualified = sortedNames.indexOf(r.player) < qualifiedPerGroup; });
   }
 }
 
@@ -641,7 +664,7 @@ function transitionToStage2() {
   // Persist to Firebase
   db.ref('tournamentStage').set('betting');
   saveStage1ToDb();
-  ['qf1','qf2','qf3','qf4'].forEach(mid => saveMatchToDb(mid));
+  ['r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8'].forEach(mid => saveMatchToDb(mid));
 
   renderAll();
   renderStage1();
@@ -943,6 +966,8 @@ function renderBracket() {
   propagateBracket();
   $('bracketContainer').innerHTML = `
     <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;gap:8px">
+      ${roundColumn('Round of 16', ['r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8'])}
+      ${bracketArrow()}
       ${roundColumn('Quarterfinals', ['qf1','qf2','qf3','qf4'])}
       ${bracketArrow()}
       ${roundColumn('Semifinals', ['sf1','sf2'])}
@@ -958,7 +983,7 @@ function renderBracket() {
 function renderBetTimersAdmin() {
   const panel = $('betTimersPanel');
   if (!panel || !state.isAdmin) return;
-  const rounds = ['Quarterfinals', 'Semifinals', 'Final'];
+  const rounds = ['Round of 16', 'Quarterfinals', 'Semifinals', 'Final'];
   panel.innerHTML = rounds.map(round => {
     const deadline = state.betTimers[round];
     const info = getTimerInfo(round);
@@ -1028,7 +1053,7 @@ function renderAdmin() {
     $("adminPanel").innerHTML = '<p class="text-xs text-gray-500 italic mt-1">🔒 Admin access required.</p>';
     return;
   }
-  const matchOrder = ["qf1","qf2","qf3","qf4","sf1","sf2","fin"];
+  const matchOrder = ["r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","r16_8","qf1","qf2","qf3","qf4","sf1","sf2","fin"];
   $("adminPanel").innerHTML = matchOrder.map(mid => {
     const m = state.matches[mid];
     const isTBD = m.p1 === "TBD" || m.p2 === "TBD";
@@ -1537,7 +1562,7 @@ function setEditTab(tab) {
 
 function renderEditPlayersModal() {
   const tabs  = [...Object.keys(state.stage1), "__bracket__"];
-  const label = t => t === "__bracket__" ? "🏆 Bracket (QFs)" : t;
+  const label = t => t === "__bracket__" ? "🏆 Bracket (R16)" : t;
 
   $("editPlayersTabs").innerHTML = tabs.map(t => `
     <button onclick="setEditTab('${t}')"
@@ -1551,12 +1576,12 @@ function renderEditPlayersModal() {
   let html = '';
 
   if (editTab === "__bracket__") {
-    // QF matches only — SF/Final are auto-propagated
-    const qfs = ["qf1","qf2","qf3","qf4"];
+    // R16 matches — QFs/SFs/Final are auto-propagated from winners
+    const r16s = ["r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","r16_8"];
     html = `
-      <p class="text-xs text-gray-500 mb-4">Edit the players for each Quarterfinal match. Semifinals and Final are filled automatically from QF results.</p>
+      <p class="text-xs text-gray-500 mb-4">Edit the players for each Round of 16 match. Quarterfinals, Semifinals, and Final are filled automatically from results.</p>
       <div class="flex flex-col gap-3">
-        ${qfs.map(mid => {
+        ${r16s.map(mid => {
           const m = state.matches[mid];
           return `
             <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-3">
@@ -1677,8 +1702,8 @@ function savePlayerEdits() {
   if (!state.isAdmin) return;
 
   if (editTab === "__bracket__") {
-    const qfs = ["qf1","qf2","qf3","qf4"];
-    qfs.forEach(mid => {
+    const r16s = ["r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","r16_8"];
+    r16s.forEach(mid => {
       const m  = state.matches[mid];
       const p1 = $("ep_" + mid + "_p1")?.value.trim();
       const p2 = $("ep_" + mid + "_p2")?.value.trim();
@@ -1719,7 +1744,7 @@ function savePlayerEdits() {
 
   // Persist to Firebase
   if (editTab === "__bracket__") {
-    ["qf1","qf2","qf3","qf4"].forEach(mid => saveMatchToDb(mid));
+    ["r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","r16_8"].forEach(mid => saveMatchToDb(mid));
   } else {
     saveStage1ToDb();
   }
