@@ -17,6 +17,11 @@
     }
   </script>
   <link rel="stylesheet" href="css/tournament.css" />
+  <style>
+    .sch-tab-active { background: linear-gradient(135deg, #059669, #10b981); color: #fff; box-shadow: 0 0 12px rgba(16,185,129,0.3); }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -113,43 +118,45 @@
   </section>
 
   <!-- ═══════════════════════ SCHEDULE SECTION ═══════════════ -->
-  <section class="bg-gray-900 border-b border-gray-800 py-8 px-4" dir="rtl">
-    <div class="max-w-2xl mx-auto">
-      <h2 class="text-xl md:text-2xl font-bold text-white mb-5 text-center">📅 לו&quot;ז הטורניר המלא: משריינים יומנים!</h2>
+  <section class="bg-gray-900 border-b border-gray-800 py-6 px-4" dir="rtl">
+    <div class="max-w-3xl mx-auto">
+      <!-- Toggle Button -->
+      <button id="scheduleToggleBtn" onclick="toggleSchedule()"
+        class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600/20 to-emerald-500/10 hover:from-emerald-600/30 hover:to-emerald-500/20 border border-emerald-500/30 rounded-xl px-5 py-3 transition-all group">
+        <span class="text-lg">📅</span>
+        <span class="text-sm md:text-base font-bold text-white">לו"ז הטורניר המלא</span>
+        <svg id="scheduleChevron" class="w-4 h-4 text-gray-400 transition-transform duration-300 mr-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
 
-      <div class="mb-5">
-        <h3 class="text-sm font-bold uppercase tracking-widest text-brand mb-3">שלב הבתים (מוקדמות)</h3>
-        <div class="flex flex-col gap-2">
-          <div class="bg-gray-800 rounded-lg px-4 py-2.5 flex items-start gap-3">
-            <span class="text-brand font-bold text-sm whitespace-nowrap mt-0.5">ראשון (15.3)</span>
-            <span class="text-gray-300 text-sm">מחזור פתיחה – כולם עולים למגרש.</span>
-          </div>
-          <div class="bg-gray-800 rounded-lg px-4 py-2.5 flex items-start gap-3">
-            <span class="text-brand font-bold text-sm whitespace-nowrap mt-0.5">שני (16.3)</span>
-            <span class="text-gray-300 text-sm">מחזור שני – הקרב על המיקום מתחמם.</span>
-          </div>
-          <div class="bg-gray-800 rounded-lg px-4 py-2.5 flex items-start gap-3">
-            <span class="text-brand font-bold text-sm whitespace-nowrap mt-0.5">שלישי (17.3)</span>
-            <span class="text-gray-300 text-sm">מחזור הכרעה – בסוף היום נדע מי ה-8 שעולים.</span>
-          </div>
+      <!-- Collapsible Schedule Body -->
+      <div id="scheduleBody" class="hidden mt-4">
+        <!-- Day Tabs -->
+        <div class="flex gap-1 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+          <button onclick="switchScheduleTab('day1')" id="schTab_day1"
+            class="sch-tab sch-tab-active whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all">
+            🟢 יום 1 (A&C)
+          </button>
+          <button onclick="switchScheduleTab('day2')" id="schTab_day2"
+            class="sch-tab whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all bg-zinc-800 text-gray-400 hover:text-white">
+            🟠 יום 2 (B&D)
+          </button>
+          <button onclick="switchScheduleTab('day3')" id="schTab_day3"
+            class="sch-tab whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all bg-zinc-800 text-gray-400 hover:text-white">
+            ⚔️ יום 3 (1/8)
+          </button>
+          <button onclick="switchScheduleTab('day4')" id="schTab_day4"
+            class="sch-tab whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all bg-zinc-800 text-gray-400 hover:text-white">
+            🏆 יום 4 (גמר)
+          </button>
         </div>
-        <div class="mt-3 bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-2.5 text-center">
-          <span class="text-red-400 font-bold text-sm">🔴 20:00 בלילה: פתיחת זירת ההימורים באתר לשלבי הגמר!</span>
-        </div>
-      </div>
 
-      <div>
-        <h3 class="text-sm font-bold uppercase tracking-widest text-yellow-400 mb-3">שלבי הנוק-אאוט (המאני-טיים)</h3>
-        <div class="flex flex-col gap-2">
-          <div class="bg-gray-800 rounded-lg px-4 py-2.5 flex items-start gap-3">
-            <span class="text-yellow-400 font-bold text-sm whitespace-nowrap mt-0.5">רביעי (18.3)</span>
-            <span class="text-gray-300 text-sm">רבע הגמר – המפסיד הולך הביתה, המנצח מתקרב לגביע.</span>
-          </div>
-          <div class="bg-gray-800 rounded-lg px-4 py-2.5 flex items-start gap-3">
-            <span class="text-yellow-400 font-bold text-sm whitespace-nowrap mt-0.5">חמישי (19.3)</span>
-            <span class="text-gray-300 text-sm">הגמר הגדול! חצאי גמר, משחק על מקום 3 וקרב האליפות.</span>
-          </div>
-        </div>
+        <!-- Day Content Panels -->
+        <div id="schPanel_day1" class="sch-panel"></div>
+        <div id="schPanel_day2" class="sch-panel hidden"></div>
+        <div id="schPanel_day3" class="sch-panel hidden"></div>
+        <div id="schPanel_day4" class="sch-panel hidden"></div>
       </div>
     </div>
   </section>
@@ -457,28 +464,32 @@ const state = {
 
   stage1: {
     "Group A": [
-      { player: "Player 1", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 2", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 3", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 4", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "הילה", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "נאור לוי", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "נדב חמו", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "אלעד כהן", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "עדן מיכאלי", W: 0, L: 0, pts: 0, qualified: false },
     ],
     "Group B": [
-      { player: "Player 5", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 6", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 7", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 8", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "חגי סתוי", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "יעל", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "רון משה חמו", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "מרסלו", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "מוריה", W: 0, L: 0, pts: 0, qualified: false },
     ],
     "Group C": [
-      { player: "Player 9",  W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 10", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 11", W: 0, L: 0, pts: 0, qualified: false},
-      { player: "Player 12", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "מיקי צגאי", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "אריאל עמר", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "סמי עזיר", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "בנימין חמי", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "דני", W: 0, L: 0, pts: 0, qualified: false },
     ],
     "Group D": [
-      { player: "Player 13", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 14", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 15", W: 0, L: 0, pts: 0, qualified: false },
-      { player: "Player 16", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "רועי ברנר", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "אוריין ברוך", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "נועם אוהד", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "אלן טראביצקי", W: 0, L: 0, pts: 0, qualified: false },
+      { player: "ג'ואנה", W: 0, L: 0, pts: 0, qualified: false },
     ],
   },
 
@@ -1765,6 +1776,7 @@ function renderAll() {
   renderBettingBanner();
   renderStageControls();
   renderMyStats();
+  if (scheduleOpen) renderScheduleTab();
 
   // Sync user badge balance
   if (state.currentUser && state.users[state.currentUser]) {
@@ -1842,6 +1854,206 @@ function renderMyStats() {
     stat('Won / Lost',   `${s.won} / ${s.lost}`, s.won >= s.lost ? 'text-green-400' : 'text-red-400'),
     stat('Win Rate',     `${winRate}%`, parseFloat(winRate) >= 50 ? 'text-green-400' : 'text-red-400'),
   ].join('');
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TOURNAMENT SCHEDULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const scheduleData = {
+  day1: {
+    title: '🟢 יום ראשון: "יום הבתים הכחולים" (A & C)',
+    subtitle: 'כל המשחקים של בתים א\' ו-ג\' מתקיימים היום.',
+    sections: [
+      {
+        name: 'בית א\' (Group A)',
+        matches: [
+          { n:1,  p1:'הילה',       p2:'נאור לוי' },
+          { n:2,  p1:'נדב חמו',    p2:'אלעד כהן' },
+          { n:3,  p1:'עדן מיכאלי', p2:'הילה' },
+          { n:4,  p1:'נאור לוי',   p2:'נדב חמו' },
+          { n:5,  p1:'אלעד כהן',  p2:'עדן מיכאלי' },
+          { n:6,  p1:'הילה',       p2:'נדב חמו' },
+          { n:7,  p1:'נאור לוי',   p2:'אלעד כהן' },
+          { n:8,  p1:'נדב חמו',    p2:'עדן מיכאלי' },
+          { n:9,  p1:'הילה',       p2:'אלעד כהן' },
+          { n:10, p1:'נאור לוי',   p2:'עדן מיכאלי' },
+        ]
+      },
+      {
+        name: 'בית ג\' (Group C)',
+        matches: [
+          { n:1,  p1:'מיקי צגאי',   p2:'אריאל עמר' },
+          { n:2,  p1:'סמי עזיר',    p2:'בנימין חמי' },
+          { n:3,  p1:'דני',         p2:'מיקי צגאי' },
+          { n:4,  p1:'אריאל עמר',  p2:'סמי עזיר' },
+          { n:5,  p1:'בנימין חמי', p2:'דני' },
+          { n:6,  p1:'מיקי צגאי',   p2:'סמי עזיר' },
+          { n:7,  p1:'אריאל עמר',  p2:'בנימין חמי' },
+          { n:8,  p1:'סמי עזיר',    p2:'דני' },
+          { n:9,  p1:'מיקי צגאי',   p2:'בנימין חמי' },
+          { n:10, p1:'אריאל עמר',  p2:'דני' },
+        ]
+      }
+    ]
+  },
+  day2: {
+    title: '🟠 יום שני: "יום הבתים האדומים" (B & D)',
+    subtitle: 'כל המשחקים של בתים ב\' ו-ד\' מתקיימים היום.',
+    sections: [
+      {
+        name: 'בית ב\' (Group B)',
+        matches: [
+          { n:1,  p1:'חגי סתוי',    p2:'יעל' },
+          { n:2,  p1:'רון משה חמו', p2:'מרסלו' },
+          { n:3,  p1:'מוריה',       p2:'חגי סתוי' },
+          { n:4,  p1:'יעל',         p2:'רון משה חמו' },
+          { n:5,  p1:'מרסלו',      p2:'מוריה' },
+          { n:6,  p1:'חגי סתוי',    p2:'רון משה חמו' },
+          { n:7,  p1:'יעל',         p2:'מרסלו' },
+          { n:8,  p1:'רון משה חמו', p2:'מוריה' },
+          { n:9,  p1:'חגי סתוי',    p2:'מרסלו' },
+          { n:10, p1:'יעל',         p2:'מוריה' },
+        ]
+      },
+      {
+        name: 'בית ד\' (Group D)',
+        matches: [
+          { n:1,  p1:'רועי ברנר',   p2:'אוריין ברוך' },
+          { n:2,  p1:'נועם אוהד',   p2:'אלן טראביצקי' },
+          { n:3,  p1:'ג\'ואנה',       p2:'רועי ברנר' },
+          { n:4,  p1:'אוריין ברוך',  p2:'נועם אוהד' },
+          { n:5,  p1:'אלן טראביצקי', p2:'ג\'ואנה' },
+          { n:6,  p1:'רועי ברנר',   p2:'נועם אוהד' },
+          { n:7,  p1:'אוריין ברוך',  p2:'אלן טראביצקי' },
+          { n:8,  p1:'נועם אוהד',   p2:'ג\'ואנה' },
+          { n:9,  p1:'רועי ברנר',   p2:'אלן טראביצקי' },
+          { n:10, p1:'אוריין ברוך',  p2:'ג\'ואנה' },
+        ]
+      }
+    ]
+  },
+  day3: {
+    title: '⚔️ יום שלישי: שמינית הגמר (1/8)',
+    subtitle: '8 משחקי נוק-אאוט. מפסיד = הולך הביתה.',
+    sections: [
+      {
+        name: 'שמינית גמר (Round of 16)',
+        isDynamic: true,
+        matchIds: ['r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8']
+      }
+    ]
+  },
+  day4: {
+    title: '🏆 יום רביעי: הגמר הגדול!',
+    subtitle: 'רבע גמר, חצי גמר והגמר המלכותי.',
+    sections: [
+      { name: 'רבע גמר (Quarterfinals)', isDynamic: true, matchIds: ['qf1','qf2','qf3','qf4'] },
+      { name: 'חצי גמר (Semifinals)', isDynamic: true, matchIds: ['sf1','sf2'] },
+      { name: 'גמר סופי (Final)', isDynamic: true, matchIds: ['fin'] }
+    ]
+  }
+};
+
+let scheduleOpen = false;
+let activeSchTab = 'day1';
+
+function toggleSchedule() {
+  scheduleOpen = !scheduleOpen;
+  const body = $('scheduleBody');
+  const chevron = $('scheduleChevron');
+  if (scheduleOpen) {
+    body.classList.remove('hidden');
+    chevron.style.transform = 'rotate(180deg)';
+    renderScheduleTab();
+  } else {
+    body.classList.add('hidden');
+    chevron.style.transform = '';
+  }
+}
+
+function switchScheduleTab(tab) {
+  activeSchTab = tab;
+  ['day1','day2','day3','day4'].forEach(d => {
+    const btn = $('schTab_' + d);
+    const panel = $('schPanel_' + d);
+    if (d === tab) {
+      btn.className = 'sch-tab sch-tab-active whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all';
+      panel.classList.remove('hidden');
+    } else {
+      btn.className = 'sch-tab whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all bg-zinc-800 text-gray-400 hover:text-white';
+      panel.classList.add('hidden');
+    }
+  });
+  renderScheduleTab();
+}
+
+function schStatusBadge(status) {
+  if (status === 'Live' || status === 'In Progress')
+    return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">⚡ LIVE</span>';
+  if (status === 'Finished')
+    return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">✅ נגמר</span>';
+  return '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-700/60 text-gray-400 border border-zinc-600/40">🕜 קרוב</span>';
+}
+
+function renderScheduleTab() {
+  const day = scheduleData[activeSchTab];
+  if (!day) return;
+  const panel = $('schPanel_' + activeSchTab);
+
+  let html = `
+    <div class="mb-4">
+      <h3 class="text-sm md:text-base font-bold text-white mb-1">${day.title}</h3>
+      <p class="text-xs text-gray-400">${day.subtitle}</p>
+    </div>
+  `;
+
+  for (const sec of day.sections) {
+    html += `<div class="mb-5">
+      <div class="flex items-center gap-2 mb-2">
+        <div class="h-px flex-1 bg-zinc-700"></div>
+        <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">${sec.name}</span>
+        <div class="h-px flex-1 bg-zinc-700"></div>
+      </div>
+      <div class="flex flex-col gap-1.5">`;
+
+    if (sec.isDynamic) {
+      // Pull from live match state
+      for (let i = 0; i < sec.matchIds.length; i++) {
+        const m = state.matches[sec.matchIds[i]];
+        if (!m) continue;
+        const winnerP1 = m.winner === m.p1;
+        const winnerP2 = m.winner === m.p2;
+        html += `
+          <div class="flex items-center gap-2 bg-zinc-800/70 border border-zinc-700/50 rounded-lg px-3 py-2 hover:border-zinc-600 transition-colors">
+            <span class="text-[11px] font-bold text-zinc-500 w-6 shrink-0 text-center">${i + 1}</span>
+            <div class="flex-1 flex items-center justify-center gap-1.5 text-sm min-w-0">
+              <span class="truncate font-medium ${winnerP1 ? 'text-emerald-400' : 'text-gray-200'}">${m.p1}</span>
+              <span class="text-[10px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded shrink-0">vs</span>
+              <span class="truncate font-medium ${winnerP2 ? 'text-emerald-400' : 'text-gray-200'}">${m.p2}</span>
+            </div>
+            <div class="shrink-0">${schStatusBadge(m.status)}</div>
+          </div>`;
+      }
+    } else {
+      // Static schedule from data
+      for (const match of sec.matches) {
+        html += `
+          <div class="flex items-center gap-2 bg-zinc-800/70 border border-zinc-700/50 rounded-lg px-3 py-2 hover:border-zinc-600 transition-colors">
+            <span class="text-[11px] font-bold text-zinc-500 w-6 shrink-0 text-center">${match.n}</span>
+            <div class="flex-1 flex items-center justify-center gap-1.5 text-sm min-w-0">
+              <span class="truncate font-medium text-gray-200">${match.p1}</span>
+              <span class="text-[10px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded shrink-0">vs</span>
+              <span class="truncate font-medium text-gray-200">${match.p2}</span>
+            </div>
+            <div class="shrink-0">${schStatusBadge('Upcoming')}</div>
+          </div>`;
+      }
+    }
+
+    html += '</div></div>';
+  }
+
+  panel.innerHTML = html;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
