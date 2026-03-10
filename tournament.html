@@ -493,23 +493,23 @@ const state = {
     ],
   },
 
-  // matchId → { id, round, label, p1, p2, status, winner, bets: { uid: { pick, wager } } }
+  // matchId → { id, round, label, p1, p2, status, winner, scoreP1, scoreP2, bets: { uid: { pick, wager } } }
   matches: {
-    r16_1: { id:"r16_1", round:"Round of 16", label:"R16 #1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    r16_2: { id:"r16_2", round:"Round of 16", label:"R16 #2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    r16_3: { id:"r16_3", round:"Round of 16", label:"R16 #3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    r16_4: { id:"r16_4", round:"Round of 16", label:"R16 #4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    r16_5: { id:"r16_5", round:"Round of 16", label:"R16 #5", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    r16_6: { id:"r16_6", round:"Round of 16", label:"R16 #6", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    r16_7: { id:"r16_7", round:"Round of 16", label:"R16 #7", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    r16_8: { id:"r16_8", round:"Round of 16", label:"R16 #8", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    qf1: { id:"qf1", round:"Quarterfinals", label:"QF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    qf2: { id:"qf2", round:"Quarterfinals", label:"QF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    qf3: { id:"qf3", round:"Quarterfinals", label:"QF 3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    qf4: { id:"qf4", round:"Quarterfinals", label:"QF 4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    sf1: { id:"sf1", round:"Semifinals",    label:"SF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    sf2: { id:"sf2", round:"Semifinals",    label:"SF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
-    fin: { id:"fin", round:"Final",         label:"Final",p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, bets:{} },
+    r16_1: { id:"r16_1", round:"Round of 16", label:"R16 #1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    r16_2: { id:"r16_2", round:"Round of 16", label:"R16 #2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    r16_3: { id:"r16_3", round:"Round of 16", label:"R16 #3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    r16_4: { id:"r16_4", round:"Round of 16", label:"R16 #4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    r16_5: { id:"r16_5", round:"Round of 16", label:"R16 #5", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    r16_6: { id:"r16_6", round:"Round of 16", label:"R16 #6", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    r16_7: { id:"r16_7", round:"Round of 16", label:"R16 #7", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    r16_8: { id:"r16_8", round:"Round of 16", label:"R16 #8", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    qf1: { id:"qf1", round:"Quarterfinals", label:"QF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    qf2: { id:"qf2", round:"Quarterfinals", label:"QF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    qf3: { id:"qf3", round:"Quarterfinals", label:"QF 3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    qf4: { id:"qf4", round:"Quarterfinals", label:"QF 4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    sf1: { id:"sf1", round:"Semifinals",    label:"SF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    sf2: { id:"sf2", round:"Semifinals",    label:"SF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    fin: { id:"fin", round:"Final",         label:"Final",p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
   },
 
   // bracket wiring: which matches feed into which
@@ -528,6 +528,9 @@ const state = {
 
   // group stage match statuses: "day1_secIdx_matchN" → "Upcoming" | "In Progress" | "Finished"
   groupMatchStatuses: {},
+
+  // group stage match scores: "day1_secIdx_matchN" → { p1: number, p2: number }
+  groupMatchScores: {},
 };
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -866,11 +869,18 @@ function matchCard(m) {
     const isWinner = m.winner === player;
     const isTbd   = player === "TBD";
     const avatarCls = isWinner ? '' : side === 'p1' ? 'p1-avatar' : 'p2-avatar';
+    const scoreVal = side === 'p1' ? (m.scoreP1 || 0) : (m.scoreP2 || 0);
+    const scoreDisplay = (!isTBD && (m.status === 'In Progress' || m.status === 'Finished'))
+      ? (state.isAdmin
+          ? `<input type="number" min="0" value="${scoreVal}" class="w-10 bg-gray-700 border border-gray-600 rounded px-1 py-0.5 text-center text-xs text-white font-bold ml-auto shrink-0 focus:outline-none focus:ring-1 focus:ring-brand" onchange="updateMatchScore('${m.id}','${side}',this.value)" onclick="event.stopPropagation()" />`
+          : `<span class="ml-auto text-sm font-bold ${isWinner ? 'text-brand' : 'text-gray-300'} shrink-0">${scoreVal}</span>`)
+      : '';
     return `
-      <div class="player-row${isWinner ? ' winner-row' : ''}">
+      <div class="player-row${isWinner ? ' winner-row' : ''}" style="display:flex;align-items:center">
         <div class="player-avatar ${avatarCls}">${isWinner ? '🏆' : initials(player)}</div>
         <div class="player-name${isTbd ? ' tbd' : isWinner ? ' winner-name winner-glow' : ''}">${player}</div>
-        ${isWinner ? '<div class="winner-badge">WINNER</div>' : ''}
+        ${isWinner && !state.isAdmin ? '<div class="winner-badge">WINNER</div>' : ''}
+        ${scoreDisplay}
       </div>
     `;
   };
@@ -1395,6 +1405,13 @@ function attachUserListeners(fbUser, overrideName) {
   dbRefs.groupMatchStatuses = db.ref('groupMatchStatuses');
   dbRefs.groupMatchStatuses.on('value', snap => {
     state.groupMatchStatuses = snap.val() || {};
+    if (scheduleOpen) renderScheduleTab();
+  });
+
+  // ── Live-listen to group match scores ──
+  dbRefs.groupMatchScores = db.ref('groupMatchScores');
+  dbRefs.groupMatchScores.on('value', snap => {
+    state.groupMatchScores = snap.val() || {};
     if (scheduleOpen) renderScheduleTab();
   });
 
@@ -2033,12 +2050,22 @@ function renderScheduleTab() {
         if (!m) continue;
         const winnerP1 = m.winner === m.p1;
         const winnerP2 = m.winner === m.p2;
+        const showScore = m.status === 'In Progress' || m.status === 'Finished';
+        const s1 = m.scoreP1 || 0, s2 = m.scoreP2 || 0;
+        const scoreP1Html = showScore ? (state.isAdmin
+          ? `<input type="number" min="0" value="${s1}" class="w-8 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateMatchScore('${m.id}','p1',this.value)" onclick="event.stopPropagation()" />`
+          : `<span class="text-xs font-bold ${winnerP1 ? 'text-emerald-400' : 'text-gray-300'} shrink-0">${s1}</span>`) : '';
+        const scoreP2Html = showScore ? (state.isAdmin
+          ? `<input type="number" min="0" value="${s2}" class="w-8 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateMatchScore('${m.id}','p2',this.value)" onclick="event.stopPropagation()" />`
+          : `<span class="text-xs font-bold ${winnerP2 ? 'text-emerald-400' : 'text-gray-300'} shrink-0">${s2}</span>`) : '';
         html += `
           <div class="flex items-center gap-2 bg-zinc-800/70 border border-zinc-700/50 rounded-lg px-3 py-2 hover:border-zinc-600 transition-colors">
             <span class="text-[11px] font-bold text-zinc-500 w-6 shrink-0 text-center">${i + 1}</span>
             <div class="flex-1 flex items-center justify-center gap-1.5 text-sm min-w-0">
               <span class="truncate font-medium ${winnerP1 ? 'text-emerald-400' : 'text-gray-200'}">${m.p1}</span>
+              ${scoreP1Html}
               <span class="text-[10px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded shrink-0">vs</span>
+              ${scoreP2Html}
               <span class="truncate font-medium ${winnerP2 ? 'text-emerald-400' : 'text-gray-200'}">${m.p2}</span>
             </div>
             <div class="shrink-0">${schStatusBadge(m.status)}</div>
@@ -2050,6 +2077,14 @@ function renderScheduleTab() {
       for (const match of sec.matches) {
         const statusKey = activeSchTab + '_' + secIdx + '_' + match.n;
         const mStatus = state.groupMatchStatuses[statusKey] || 'Upcoming';
+        const scores = state.groupMatchScores[statusKey] || { p1: 0, p2: 0 };
+        const showScore = mStatus === 'In Progress' || mStatus === 'Finished';
+        const scoreP1Html = showScore ? (state.isAdmin
+          ? `<input type="number" min="0" value="${scores.p1}" class="w-8 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateGroupMatchScore('${statusKey}','p1',this.value)" onclick="event.stopPropagation()" />`
+          : `<span class="text-xs font-bold text-gray-300 shrink-0">${scores.p1}</span>`) : '';
+        const scoreP2Html = showScore ? (state.isAdmin
+          ? `<input type="number" min="0" value="${scores.p2}" class="w-8 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateGroupMatchScore('${statusKey}','p2',this.value)" onclick="event.stopPropagation()" />`
+          : `<span class="text-xs font-bold text-gray-300 shrink-0">${scores.p2}</span>`) : '';
         const adminBtn = state.isAdmin
           ? `<button onclick="cycleGroupMatchStatus('${statusKey}')" class="shrink-0 cursor-pointer" title="Click to change status">${schStatusBadge(mStatus)}</button>`
           : `<div class="shrink-0">${schStatusBadge(mStatus)}</div>`;
@@ -2058,7 +2093,9 @@ function renderScheduleTab() {
             <span class="text-[11px] font-bold text-zinc-500 w-6 shrink-0 text-center">${match.n}</span>
             <div class="flex-1 flex items-center justify-center gap-1.5 text-sm min-w-0">
               <span class="truncate font-medium text-gray-200">${match.p1}</span>
+              ${scoreP1Html}
               <span class="text-[10px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded shrink-0">vs</span>
+              ${scoreP2Html}
               <span class="truncate font-medium text-gray-200">${match.p2}</span>
             </div>
             ${adminBtn}
@@ -2080,6 +2117,24 @@ function cycleGroupMatchStatus(statusKey) {
   state.groupMatchStatuses[statusKey] = next;
   db.ref('groupMatchStatuses/' + statusKey).set(next);
   renderScheduleTab();
+}
+
+function updateMatchScore(matchId, side, val) {
+  if (!state.isAdmin) return;
+  const m = state.matches[matchId];
+  if (!m) return;
+  const score = Math.max(0, parseInt(val, 10) || 0);
+  if (side === 'p1') m.scoreP1 = score;
+  else m.scoreP2 = score;
+  saveMatchToDb(matchId);
+}
+
+function updateGroupMatchScore(statusKey, side, val) {
+  if (!state.isAdmin) return;
+  const score = Math.max(0, parseInt(val, 10) || 0);
+  if (!state.groupMatchScores[statusKey]) state.groupMatchScores[statusKey] = { p1: 0, p2: 0 };
+  state.groupMatchScores[statusKey][side] = score;
+  db.ref('groupMatchScores/' + statusKey).set(state.groupMatchScores[statusKey]);
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
