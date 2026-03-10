@@ -525,6 +525,9 @@ const state = {
 
   // bet timer deadlines per round (round → deadline timestamp ms)
   betTimers: {},
+
+  // group stage match statuses: "day1_secIdx_matchN" → "Upcoming" | "In Progress" | "Finished"
+  groupMatchStatuses: {},
 };
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1388,6 +1391,13 @@ function attachUserListeners(fbUser, overrideName) {
     renderAll();
   });
 
+  // ── Live-listen to group match statuses ──
+  dbRefs.groupMatchStatuses = db.ref('groupMatchStatuses');
+  dbRefs.groupMatchStatuses.on('value', snap => {
+    state.groupMatchStatuses = snap.val() || {};
+    if (scheduleOpen) renderScheduleTab();
+  });
+
   // ── Live-listen to bet timers ──
   dbRefs.betTimers = db.ref('betTimers');
   dbRefs.betTimers.on('value', snap => {
@@ -2035,8 +2045,14 @@ function renderScheduleTab() {
           </div>`;
       }
     } else {
-      // Static schedule from data
+      // Group stage schedule — status from state
+      const secIdx = day.sections.indexOf(sec);
       for (const match of sec.matches) {
+        const statusKey = activeSchTab + '_' + secIdx + '_' + match.n;
+        const mStatus = state.groupMatchStatuses[statusKey] || 'Upcoming';
+        const adminBtn = state.isAdmin
+          ? `<button onclick="cycleGroupMatchStatus('${statusKey}')" class="shrink-0 cursor-pointer" title="Click to change status">${schStatusBadge(mStatus)}</button>`
+          : `<div class="shrink-0">${schStatusBadge(mStatus)}</div>`;
         html += `
           <div class="flex items-center gap-2 bg-zinc-800/70 border border-zinc-700/50 rounded-lg px-3 py-2 hover:border-zinc-600 transition-colors">
             <span class="text-[11px] font-bold text-zinc-500 w-6 shrink-0 text-center">${match.n}</span>
@@ -2045,7 +2061,7 @@ function renderScheduleTab() {
               <span class="text-[10px] font-bold bg-orange-500 text-white px-1.5 py-0.5 rounded shrink-0">vs</span>
               <span class="truncate font-medium text-gray-200">${match.p2}</span>
             </div>
-            <div class="shrink-0">${schStatusBadge('Upcoming')}</div>
+            ${adminBtn}
           </div>`;
       }
     }
@@ -2054,6 +2070,16 @@ function renderScheduleTab() {
   }
 
   panel.innerHTML = html;
+}
+
+function cycleGroupMatchStatus(statusKey) {
+  if (!state.isAdmin) return;
+  const cycle = ['Upcoming', 'In Progress', 'Finished'];
+  const cur = state.groupMatchStatuses[statusKey] || 'Upcoming';
+  const next = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
+  state.groupMatchStatuses[statusKey] = next;
+  db.ref('groupMatchStatuses/' + statusKey).set(next);
+  renderScheduleTab();
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
