@@ -2115,10 +2115,10 @@ function renderScheduleTab() {
         const showScore = m.status === 'In Progress' || m.status === 'Finished';
         const s1 = m.scoreP1 || 0, s2 = m.scoreP2 || 0;
         const scoreP1Html = showScore ? (state.isAdmin
-          ? `<input type="number" min="0" value="${s1}" class="w-8 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateMatchScore('${m.id}','p1',this.value)" onclick="event.stopPropagation()" />`
+          ? `<input type="number" min="0" value="${s1}" class="w-20 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateMatchScore('${m.id}','p1',this.value)" onclick="event.stopPropagation()" />`
           : `<span class="text-xs font-bold ${winnerP1 ? 'text-emerald-400' : 'text-gray-300'} shrink-0">${s1}</span>`) : '';
         const scoreP2Html = showScore ? (state.isAdmin
-          ? `<input type="number" min="0" value="${s2}" class="w-8 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateMatchScore('${m.id}','p2',this.value)" onclick="event.stopPropagation()" />`
+          ? `<input type="number" min="0" value="${s2}" class="w-20 bg-zinc-700 border border-zinc-600 rounded px-0.5 py-0.5 text-center text-xs text-white font-bold shrink-0 focus:outline-none focus:ring-1 focus:ring-emerald-500" onchange="updateMatchScore('${m.id}','p2',this.value)" onclick="event.stopPropagation()" />`
           : `<span class="text-xs font-bold ${winnerP2 ? 'text-emerald-400' : 'text-gray-300'} shrink-0">${s2}</span>`) : '';
         html += `
           <div class="flex items-center gap-2 bg-zinc-800/70 border border-zinc-700/50 rounded-lg px-3 py-2 hover:border-zinc-600 transition-colors">
