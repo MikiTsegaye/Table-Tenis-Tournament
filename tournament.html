@@ -832,6 +832,7 @@ function renderStage1() {
       <div class="bg-gray-800 px-4 py-2 flex items-center justify-between">
         <span class="font-semibold text-sm">${group}</span>
         <span class="text-xs text-gray-400">W / L / Pts</span>
+        ${state.isAdmin ? `<button class="text-xs bg-brand/20 hover:bg-brand/40 text-brand font-bold rounded px-2 py-1 ml-2" onclick="openEditGroupMatchesModal('${group}')">Edit Matches ✏️</button>` : ''}
       </div>
       <table class="w-full text-sm">
         <tbody>
@@ -850,6 +851,66 @@ function renderStage1() {
       </table>
     </div>
   `).join("");
+
+  // Modal for editing group matches (admin only)
+  if (!document.getElementById('editGroupMatchesModal')) {
+    const modal = document.createElement('div');
+    modal.id = 'editGroupMatchesModal';
+    modal.className = 'hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm';
+    modal.innerHTML = `
+      <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col" style="max-height:92vh">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <h3 class="text-base font-bold">✏️ Edit Group Matches</h3>
+          <button onclick="closeEditGroupMatchesModal()" class="text-gray-500 hover:text-white text-xl leading-none">&times;</button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-6 py-4" id="editGroupMatchesBody"></div>
+        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-800">
+          <button onclick="closeEditGroupMatchesModal()" class="text-sm px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600">Cancel</button>
+          <button onclick="saveGroupMatchEdits()" class="text-sm px-5 py-2 rounded-lg bg-brand hover:bg-brand-dark font-semibold text-gray-950">Save Changes</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+}
+// Admin: Open modal to edit group matches
+let editingGroupName = null;
+let editingGroupRows = null;
+function openEditGroupMatchesModal(groupName) {
+  if (!state.isAdmin) return;
+  editingGroupName = groupName;
+  editingGroupRows = JSON.parse(JSON.stringify(state.stage1[groupName]));
+  const body = document.getElementById('editGroupMatchesBody');
+  body.innerHTML = editingGroupRows.map((r, i) => `
+    <div class="flex gap-2 items-center mb-2">
+      <input type="text" class="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200" value="${r.player}" onchange="editingGroupRows[${i}].player=this.value" />
+      <input type="number" class="w-12 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200 text-center" value="${r.W}" min="0" onchange="editingGroupRows[${i}].W=+this.value" />
+      <input type="number" class="w-12 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200 text-center" value="${r.L}" min="0" onchange="editingGroupRows[${i}].L=+this.value" />
+      <input type="number" class="w-12 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-brand font-bold text-center" value="${r.pts}" min="0" onchange="editingGroupRows[${i}].pts=+this.value" />
+    </div>
+  `).join('');
+  document.getElementById('editGroupMatchesModal').classList.remove('hidden');
+}
+
+function closeEditGroupMatchesModal() {
+  document.getElementById('editGroupMatchesModal').classList.add('hidden');
+  editingGroupName = null;
+  editingGroupRows = null;
+}
+
+function saveGroupMatchEdits() {
+  if (!state.isAdmin || !editingGroupName || !editingGroupRows) return;
+  // Validate
+  for (const r of editingGroupRows) {
+    if (!r.player.trim()) { showToast('Player name cannot be empty.', 'error'); return; }
+    if (r.W < 0 || r.L < 0 || r.pts < 0) { showToast('Values cannot be negative.', 'error'); return; }
+  }
+  // Save to state and Firebase
+  state.stage1[editingGroupName] = editingGroupRows.map(r => ({ ...r }));
+  db.ref('stage1/' + editingGroupName).set(state.stage1[editingGroupName]);
+  closeEditGroupMatchesModal();
+  renderStage1();
+  showToast('Group matches updated!', 'success');
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
