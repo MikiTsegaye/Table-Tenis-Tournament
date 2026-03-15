@@ -884,9 +884,9 @@ function openEditGroupMatchesModal(groupName) {
   body.innerHTML = editingGroupRows.map((r, i) => `
     <div class="flex gap-2 items-center mb-2">
       <input type="text" class="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200" value="${r.player}" onchange="editingGroupRows[${i}].player=this.value" />
-      <input type="number" class="w-12 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200 text-center" value="${r.W}" min="0" onchange="editingGroupRows[${i}].W=+this.value" />
-      <input type="number" class="w-12 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200 text-center" value="${r.L}" min="0" onchange="editingGroupRows[${i}].L=+this.value" />
-      <input type="number" class="w-12 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-brand font-bold text-center" value="${r.pts}" min="0" onchange="editingGroupRows[${i}].pts=+this.value" />
+      <input type="number" class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200 text-center" value="${r.W}" min="0" onchange="editingGroupRows[${i}].W=+this.value" />
+      <input type="number" class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-200 text-center" value="${r.L}" min="0" onchange="editingGroupRows[${i}].L=+this.value" />
+      <input type="number" class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-brand font-bold text-center" value="${r.pts}" min="0" onchange="editingGroupRows[${i}].pts=+this.value" />
     </div>
   `).join('');
   document.getElementById('editGroupMatchesModal').classList.remove('hidden');
@@ -934,7 +934,7 @@ function matchCard(m) {
     const scoreVal = side === 'p1' ? (m.scoreP1 || 0) : (m.scoreP2 || 0);
     const scoreDisplay = (!isTBD && (m.status === 'In Progress' || m.status === 'Finished'))
       ? (state.isAdmin
-          ? `<input type="number" min="0" value="${scoreVal}" class="w-10 bg-gray-700 border border-gray-600 rounded px-1 py-0.5 text-center text-xs text-white font-bold ml-auto shrink-0 focus:outline-none focus:ring-1 focus:ring-brand" onchange="updateMatchScore('${m.id}','${side}',this.value)" onclick="event.stopPropagation()" />`
+          ? `<input type="number" min="0" value="${scoreVal}" class="w-20 bg-gray-700 border border-gray-600 rounded px-1 py-0.5 text-center text-xs text-white font-bold ml-auto shrink-0 focus:outline-none focus:ring-1 focus:ring-brand" onchange="updateMatchScore('${m.id}','${side}',this.value)" onclick="event.stopPropagation()" />`
           : `<span class="ml-auto text-sm font-bold ${isWinner ? 'text-brand' : 'text-gray-300'} shrink-0">${scoreVal}</span>`)
       : '';
     return `
@@ -1716,7 +1716,7 @@ function renderEditPlayersModal() {
             <th class="text-center pb-2 font-semibold w-14">L</th>
             <th class="text-center pb-2 font-semibold w-14">Pts</th>
             <th class="text-center pb-2 font-semibold w-16">Qualified</th>
-            <th class="text-center pb-2 font-semibold w-10"></th>
+            <th class="text-center pb-2 font-semibold w-20"></th>
           </tr>
         </thead>
         <tbody id="editPlayersTableBody" class="divide-y divide-gray-800">
