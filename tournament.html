@@ -681,7 +681,7 @@ function transitionToStage2() {
   // Persist to Firebase
   db.ref('tournamentStage').set('betting');
   saveStage1ToDb();
-  ['qf1','qf2','qf3','qf4'].forEach(mid => saveMatchToDb(mid));
+  ['playin1','playin2','playin3','playin4','qf1','qf2','qf3','qf4'].forEach(mid => saveMatchToDb(mid));
 
   renderAll();
   renderStage1();
