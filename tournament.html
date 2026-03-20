@@ -142,10 +142,7 @@
             class="sch-tab whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all bg-zinc-800 text-gray-400 hover:text-white">
             🟠 יום 2 (B&D)
           </button>
-          <button onclick="switchScheduleTab('day3')" id="schTab_day3"
-            class="sch-tab whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all bg-zinc-800 text-gray-400 hover:text-white">
-            ⚔️ יום 3 (1/8)
-          </button>
+          <!-- Removed 1/8 stage tab -->
           <button onclick="switchScheduleTab('day4')" id="schTab_day4"
             class="sch-tab whitespace-nowrap text-xs font-bold px-3 py-2 rounded-lg transition-all bg-zinc-800 text-gray-400 hover:text-white">
             🏆 יום 4 (גמר)
@@ -495,14 +492,10 @@ const state = {
 
   // matchId → { id, round, label, p1, p2, status, winner, scoreP1, scoreP2, bets: { uid: { pick, wager } } }
   matches: {
-    r16_1: { id:"r16_1", round:"Round of 16", label:"R16 #1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
-    r16_2: { id:"r16_2", round:"Round of 16", label:"R16 #2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
-    r16_3: { id:"r16_3", round:"Round of 16", label:"R16 #3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
-    r16_4: { id:"r16_4", round:"Round of 16", label:"R16 #4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
-    r16_5: { id:"r16_5", round:"Round of 16", label:"R16 #5", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
-    r16_6: { id:"r16_6", round:"Round of 16", label:"R16 #6", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
-    r16_7: { id:"r16_7", round:"Round of 16", label:"R16 #7", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
-    r16_8: { id:"r16_8", round:"Round of 16", label:"R16 #8", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    playin1: { id:"playin1", round:"Play-In", label:"Play-In 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    playin2: { id:"playin2", round:"Play-In", label:"Play-In 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    playin3: { id:"playin3", round:"Play-In", label:"Play-In 3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
+    playin4: { id:"playin4", round:"Play-In", label:"Play-In 4", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
     qf1: { id:"qf1", round:"Quarterfinals", label:"QF 1", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
     qf2: { id:"qf2", round:"Quarterfinals", label:"QF 2", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
     qf3: { id:"qf3", round:"Quarterfinals", label:"QF 3", p1:"TBD", p2:"TBD", status:"Upcoming", winner:null, scoreP1:0, scoreP2:0, bets:{} },
@@ -514,10 +507,10 @@ const state = {
 
   // bracket wiring: which matches feed into which
   bracketFeeds: {
-    qf1: ["r16_1", "r16_2"],
-    qf2: ["r16_3", "r16_4"],
-    qf3: ["r16_5", "r16_6"],
-    qf4: ["r16_7", "r16_8"],
+    qf1: ["A1", "playin1"],
+    qf2: ["B1", "playin2"],
+    qf3: ["C1", "playin3"],
+    qf4: ["D1", "playin4"],
     sf1: ["qf1", "qf2"],
     sf2: ["qf3", "qf4"],
     fin: ["sf1", "sf2"],
@@ -646,22 +639,28 @@ function generateStage2Matchups() {
 
   const p = (group, pos) => (group && group[pos]) ? group[pos].player : 'TBD';
 
-  // A vs B bracket half
-  state.matches.r16_1.p1 = p(A,0); state.matches.r16_1.p2 = p(B,3); // A1 vs B4
-  state.matches.r16_2.p1 = p(B,1); state.matches.r16_2.p2 = p(A,2); // B2 vs A3
-  state.matches.r16_3.p1 = p(A,1); state.matches.r16_3.p2 = p(B,2); // A2 vs B3
-  state.matches.r16_4.p1 = p(B,0); state.matches.r16_4.p2 = p(A,3); // B1 vs A4
+  // 1st place in each group advances directly to QF
+  state.matches.qf1.p1 = p(A,0); // A1
+  state.matches.qf2.p1 = p(B,0); // B1
+  state.matches.qf3.p1 = p(C,0); // C1
+  state.matches.qf4.p1 = p(D,0); // D1
 
-  // C vs D bracket half
-  state.matches.r16_5.p1 = p(C,0); state.matches.r16_5.p2 = p(D,3); // C1 vs D4
-  state.matches.r16_6.p1 = p(D,1); state.matches.r16_6.p2 = p(C,2); // D2 vs C3
-  state.matches.r16_7.p1 = p(C,1); state.matches.r16_7.p2 = p(D,2); // C2 vs D3
-  state.matches.r16_8.p1 = p(D,0); state.matches.r16_8.p2 = p(C,3); // D1 vs C4
+  // Play-in matches: 2nd vs 3rd from cross groups
+  state.matches.playin1.p1 = p(A,1); state.matches.playin1.p2 = p(C,2); // A2 vs C3
+  state.matches.playin2.p1 = p(A,2); state.matches.playin2.p2 = p(C,1); // A3 vs C2
+  state.matches.playin3.p1 = p(B,1); state.matches.playin3.p2 = p(D,2); // B2 vs D3
+  state.matches.playin4.p1 = p(B,2); state.matches.playin4.p2 = p(D,1); // B3 vs D2
 
-  // Mark top 4 per group as qualified
+  // QF p2 is filled by play-in winners (initially TBD)
+  state.matches.qf1.p2 = 'TBD';
+  state.matches.qf2.p2 = 'TBD';
+  state.matches.qf3.p2 = 'TBD';
+  state.matches.qf4.p2 = 'TBD';
+
+  // Mark top 3 per group as qualified for next phase
   for (const [gname, rows] of Object.entries(groups)) {
     const sortedNames = ranked[gname].map(r => r.player);
-    rows.forEach(r => { r.qualified = sortedNames.indexOf(r.player) < 4; });
+    rows.forEach(r => { r.qualified = sortedNames.indexOf(r.player) < 3; });
   }
 }
 
@@ -682,7 +681,7 @@ function transitionToStage2() {
   // Persist to Firebase
   db.ref('tournamentStage').set('betting');
   saveStage1ToDb();
-  ['r16_1','r16_2','r16_3','r16_4','r16_5','r16_6','r16_7','r16_8'].forEach(mid => saveMatchToDb(mid));
+  ['qf1','qf2','qf3','qf4'].forEach(mid => saveMatchToDb(mid));
 
   renderAll();
   renderStage1();
@@ -1139,7 +1138,7 @@ function renderAdmin() {
     $("adminPanel").innerHTML = '<p class="text-xs text-gray-500 italic mt-1">🔒 Admin access required.</p>';
     return;
   }
-  const matchOrder = ["r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","r16_8","qf1","qf2","qf3","qf4","sf1","sf2","fin"];
+  const matchOrder = ["playin1","playin2","playin3","playin4","qf1","qf2","qf3","qf4","sf1","sf2","fin"];
   $("adminPanel").innerHTML = matchOrder.map(mid => {
     const m = state.matches[mid];
     const isTBD = m.p1 === "TBD" || m.p2 === "TBD";
@@ -1676,12 +1675,12 @@ function renderEditPlayersModal() {
   let html = '';
 
   if (editTab === "__bracket__") {
-    // R16 matches — QFs/SFs/Final are auto-propagated from winners
-    const r16s = ["r16_1","r16_2","r16_3","r16_4","r16_5","r16_6","r16_7","r16_8"];
+    // QF matches — SFs/Final are auto-propagated from winners
+    const qfs = ["qf1","qf2","qf3","qf4"];
     html = `
-      <p class="text-xs text-gray-500 mb-4">Edit the players for each Round of 16 match. Quarterfinals, Semifinals, and Final are filled automatically from results.</p>
+      <p class="text-xs text-gray-500 mb-4">Edit the players for each Quarterfinal match. Semifinals and Final are filled automatically from results.</p>
       <div class="flex flex-col gap-3">
-        ${r16s.map(mid => {
+        ${qfs.map(mid => {
           const m = state.matches[mid];
           return `
             <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-3">
